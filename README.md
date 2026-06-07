@@ -1,56 +1,76 @@
-# Welcome to your Expo app 👋
+# Handdam
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Expo SDK 56, React Native, Expo Router, TypeScript, NativeWind로 구성한 앱 프로젝트입니다.
 
-## Get started
+## 시작하기
 
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```powershell
+npm install
+npx.cmd expo start --clear
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+실행 중인 Expo CLI에서 Android는 `a`, Web은 `w`를 눌러 열 수 있습니다.
 
-### Other setup steps
+## 명령어
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+```powershell
+npm run start
+npm run android
+npm run ios
+npm run web
+npx.cmd tsc --noEmit
+```
 
-## Learn more
+## 프로젝트 구조
 
-To learn more about developing your project with Expo, look at the following resources:
+```text
+handdam/
+├─ assets/                # 아이콘, 이미지 및 기타 정적 파일
+├─ src/
+│  ├─ app/                # Expo Router 라우트 및 레이아웃
+│  ├─ components/         # 앱 전역에서 재사용하는 공통 UI
+│  │  └─ ui/              # 도메인에 종속되지 않은 기본 UI
+│  ├─ constants/          # 앱 전역 공유 상수
+│  ├─ features/           # 기능 및 도메인 단위 코드
+│  ├─ hooks/              # 앱 전역에서 재사용하는 React 훅
+│  ├─ lib/                # 외부 라이브러리 설정과 공통 유틸리티
+│  ├─ stores/             # 앱 전역 공유 상태
+│  └─ types/              # 앱 전역 공유 TypeScript 타입
+├─ app.json               # Expo 앱 설정
+├─ babel.config.js        # Expo 및 NativeWind Babel 설정
+├─ global.css             # NativeWind 진입 CSS
+├─ metro.config.js        # Expo Metro 및 NativeWind 설정
+├─ tailwind.config.js     # NativeWind가 사용하는 Tailwind 설정
+└─ tsconfig.json          # TypeScript 및 경로 별칭 설정
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+각 `src` 하위 폴더의 `README.md`에는 해당 폴더의 역할과 코드 배치 기준이 적혀 있습니다.
 
-## Join the community
+## 코드 배치 원칙
 
-Join our community of developers creating universal apps.
+- `src/app`에는 라우트 구성과 화면 조합만 둡니다.
+- 한 기능에 속한 코드는 가능한 한 `src/features/<feature>`에 함께 둡니다.
+- 여러 기능에서 재사용되는 코드만 `components`, `hooks`, `lib`, `stores`, `types`로 올립니다.
+- `@/` 별칭은 `src/`를 가리킵니다.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## NativeWind
+
+NativeWind 설정에 필요한 다음 파일은 삭제하지 않습니다.
+
+- `babel.config.js`
+- `metro.config.js`
+- `tailwind.config.js`
+- `global.css`
+- `nativewind-env.d.ts`
+
+전역 CSS는 `src/app/_layout.tsx`에서 한 번만 import합니다. NativeWind 설정을 변경한 뒤에는 Metro 캐시를 초기화합니다.
+
+```powershell
+npx.cmd expo start --clear
+```
+
+## 참고 문서
+
+- [Expo SDK 56](https://docs.expo.dev/versions/v56.0.0/)
+- [Expo Router](https://docs.expo.dev/versions/v56.0.0/sdk/router/)
+- [NativeWind](https://www.nativewind.dev/docs/getting-started/installation)
