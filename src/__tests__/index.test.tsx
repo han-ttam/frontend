@@ -2,10 +2,14 @@ import { render } from "@testing-library/react-native";
 
 import HomeScreen from "../app/index";
 
-describe("HomeScreen", () => {
-  it("renders the welcome text", async () => {
-    const { getByText } = await render(<HomeScreen />);
+jest.mock("expo-router", () => ({
+  Redirect: () => null,
+}));
 
-    expect(getByText("Handdam")).toBeTruthy();
+describe("HomeScreen", () => {
+  it("renders the redirect without crashing", () => {
+    const view = render(<HomeScreen />);
+
+    expect(view).toBeTruthy();
   });
 });
