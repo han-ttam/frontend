@@ -1,3 +1,4 @@
+import { colors } from "@/constants/colors";
 import { Entypo, Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 
@@ -5,14 +6,20 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: "black",
-        tabBarInactiveTintColor: "gray",
+        sceneStyle: {
+          backgroundColor: colors.background,
+        },
+        headerShown: false,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.muted,
         tabBarLabelPosition: "below-icon",
         tabBarStyle: {
-          height: 70,
-          paddingBottom: 8,
-          paddingTop: 6,
+          height: 80,
+          paddingTop: 10,
+          backgroundColor: colors.surface,
+          borderTopWidth: 0,
         },
+
         tabBarLabelStyle: {
           fontSize: 14,
         },

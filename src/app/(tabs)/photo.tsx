@@ -1,5 +1,7 @@
+import { View } from "react-native";
+
 const PhotoScreen = () => {
-  return <div>photo</div>;
+  return <View>photo</View>;
 };
 
 export default PhotoScreen;

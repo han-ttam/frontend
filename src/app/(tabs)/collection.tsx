@@ -1,5 +1,7 @@
+import { View } from "react-native";
+
 const CollectionScreen = () => {
-  return <div>collection</div>;
+  return <View>collection</View>;
 };
 
 export default CollectionScreen;

@@ -1,5 +1,7 @@
+import { View } from "react-native";
+
 const MypageScreen = () => {
-  return <div>mypage</div>;
+  return <View>mypage</View>;
 };
 
 export default MypageScreen;
