@@ -1,6 +1,6 @@
 import { render } from "@testing-library/react-native";
 
-import HomeScreen from "./index";
+import HomeScreen from "../app/index";
 
 describe("HomeScreen", () => {
   it("renders the welcome text", async () => {
