@@ -12,7 +12,14 @@
       "Bash(npm run *)",
       "Bash(npx jest *)",
       "Bash(gh secret *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(gh workflow *)",
+      "Bash(gh run *)",
+      "Bash(npx eas-cli *)",
+      "Bash(git status *)",
+      "Bash(git rm *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\cncn0\\.claude\\skills\\gstack",
