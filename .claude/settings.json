@@ -20,13 +20,20 @@
       "Bash(npx eas-cli *)",
       "Bash(git status *)",
       "Bash(git rm *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(npm -v)",
+      "Bash(npm install *)",
+      "Bash(npm ls *)",
+      "Bash(node -e \"console.log\\(require\\('./package.json'\\).dependencies.expo\\)\")",
+      "Bash(mkdir -p .github/actions/setup-node-env)",
+      "Bash(git checkout *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\cncn0\\.claude\\skills\\gstack",
       "C:\\Users\\cncn0\\.gstack\\projects\\handdam",
       "\\tmp",
-      "C:\\Users\\cncn0\\AppData\\Local\\Temp"
+      "C:\\Users\\cncn0\\AppData\\Local\\Temp",
+      "c:\\CODE\\frontend\\.github\\actions"
     ]
   }
 }
