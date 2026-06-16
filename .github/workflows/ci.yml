@@ -29,11 +29,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: ".nvmrc"
-          cache: npm
-      - run: npm ci
+      - uses: ./.github/actions/setup-node-env
+      - run: npx expo install --check
       - run: npm run lint -- --max-warnings=0
 
   typecheck:
@@ -41,11 +38,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: ".nvmrc"
-          cache: npm
-      - run: npm ci
+      - uses: ./.github/actions/setup-node-env
       - run: npx tsc --noEmit
 
   test:
@@ -53,11 +46,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: ".nvmrc"
-          cache: npm
-      - run: npm ci
+      - uses: ./.github/actions/setup-node-env
       - run: npm test -- --passWithNoTests
 
   eas-build:
@@ -66,13 +55,9 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: ".nvmrc"
-          cache: npm
-      - run: npm ci
+      - uses: ./.github/actions/setup-node-env
       - uses: expo/expo-github-action@v8
         with:
-          eas-version: latest
+          eas-version: 20.1.0
           token: ${{ secrets.EXPO_TOKEN }}
       - run: eas build --platform all --profile ${{ inputs.profile }} --non-interactive
