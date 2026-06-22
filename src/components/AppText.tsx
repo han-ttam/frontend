@@ -8,11 +8,12 @@ type AppTextColor = "foreground" | "muted" | "primary";
 type AppTextProps = TextProps & {
   variant?: AppTextVariant;
   color?: AppTextColor;
+  size?: number;
 };
 
 const variantStyles: Record<AppTextVariant, TextStyle> = {
   body: {
-    fontSize: 15,
+    fontSize: 14,
     lineHeight: 22,
     fontWeight: "400",
   },
@@ -53,12 +54,18 @@ const colorStyles: Record<AppTextColor, TextStyle> = {
 export const AppText = ({
   variant = "body",
   color = "foreground",
+  size,
   style,
   ...props
 }: AppTextProps) => {
   return (
     <Text
-      style={[variantStyles[variant], colorStyles[color], style]}
+      style={[
+        variantStyles[variant],
+        colorStyles[color],
+        size != null && { fontSize: size },
+        style,
+      ]}
       {...props}
     />
   );
