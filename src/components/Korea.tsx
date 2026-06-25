@@ -28,7 +28,7 @@ type KoreaProps = SvgProps & {
 
 export const Korea = ({
   defaultFill = colors["region-default"],
-  strokeColor = colors.muted,
+  strokeColor = colors["region-stroke"],
   regionColors = {},
   height = "100%",
   ...svgProps
@@ -40,8 +40,8 @@ export const Korea = ({
     <Svg
       width="100%"
       height={height}
-      viewBox="0 0 800 1200"
-      preserveAspectRatio="xMidYMin meet"
+      viewBox="0 0 800 1080"
+      preserveAspectRatio="xMidYMid meet"
       {...svgProps}
     >
       <Polyline
