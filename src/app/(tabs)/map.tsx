@@ -1,7 +1,7 @@
-import { View } from "react-native";
+import MapPage from "@/pages/map/MapPage";
 
 const MapScreen = () => {
-  return <View>Map</View>;
+  return <MapPage />;
 };
 
 export default MapScreen;
