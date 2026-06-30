@@ -5,7 +5,7 @@ import { AppText } from "../AppText";
 
 type RegionMarkerProps = ViewProps & {
   name: string;
-  total: number;
+  total: number | string;
 };
 
 const RegionMarker = ({ name, total, ...props }: RegionMarkerProps) => {

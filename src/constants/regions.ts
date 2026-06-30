@@ -61,3 +61,15 @@ export const regions = [
 export type RegionId = (typeof regions)[number]["id"];
 export type RegionName = (typeof regions)[number]["name"];
 export type Region = (typeof regions)[number];
+
+export const regionLabels: Record<RegionId, string> = {
+  seoul: "서울•경기",
+  gangwon: "강원도",
+  chungbuk: "충청북도",
+  chungnam: "충청남도",
+  gyeongbuk: "경상북도",
+  gyeongnam: "경상남도",
+  jeonbuk: "전라북도",
+  jeonnam: "전라남도",
+  jeju: "제주도",
+} as const;
