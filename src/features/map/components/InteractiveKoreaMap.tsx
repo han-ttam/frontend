@@ -1,4 +1,5 @@
-import { Korea, type KoreaRegionId } from "@/components/Korea";
+import { type KoreaRegionId } from "@/components/Korea";
+import { KoreaMap } from "@/components/KoreaMap";
 import RegionMarker from "@/components/ui/RegionMarker";
 import { colors } from "@/constants/colors";
 import { regionLabels, regions, type RegionId } from "@/constants/regions";
@@ -9,8 +10,6 @@ type InteractiveKoreaMapProps = ViewProps & {
   regionColors?: Partial<Record<KoreaRegionId, string>>;
   onRegionPress?: (regionId: RegionId | undefined) => void;
 };
-
-const selectedFill = "rgba(39, 199, 168, 0.22)";
 
 const regionProgress: Record<RegionId, number> = {
   seoul: 80,
@@ -24,34 +23,6 @@ const regionProgress: Record<RegionId, number> = {
   jeju: 90,
 };
 
-const includedRegionIdsBySelection: Partial<Record<RegionId, KoreaRegionId[]>> = {
-  seoul: ["gyeonggi", "incheon"],
-  chungnam: ["daejeon", "sejong"],
-  gyeongbuk: ["daegu"],
-  gyeongnam: ["busan", "ulsan"],
-  jeonnam: ["gwangju"],
-};
-
-const getSelectedRegionColors = (
-  selectedRegionId: RegionId | undefined,
-  regionColors: Partial<Record<KoreaRegionId, string>> | undefined,
-) => {
-  if (selectedRegionId == null) {
-    return regionColors;
-  }
-
-  const selectedRegionColors: Partial<Record<KoreaRegionId, string>> = {
-    ...regionColors,
-    [selectedRegionId]: selectedFill,
-  };
-
-  includedRegionIdsBySelection[selectedRegionId]?.forEach((regionId) => {
-    selectedRegionColors[regionId] = selectedFill;
-  });
-
-  return selectedRegionColors;
-};
-
 const getRegionAccessibilityLabel = (regionId: RegionId) =>
   `${regionLabels[regionId]} 지역 선택`;
 
@@ -62,11 +33,6 @@ export const InteractiveKoreaMap = ({
   className,
   ...props
 }: InteractiveKoreaMapProps) => {
-  const selectedRegionColors = getSelectedRegionColors(
-    selectedRegionId,
-    regionColors,
-  );
-
   return (
     <View
       {...props}
@@ -74,10 +40,13 @@ export const InteractiveKoreaMap = ({
         .filter(Boolean)
         .join(" ")}
     >
-      <Korea
-        regionColors={selectedRegionColors}
-        strokeColor="rgba(244, 245, 244, 0.18)"
+      <KoreaMap
+        regionColors={regionColors}
         defaultFill={colors["region-default"]}
+        selectedRegionId={selectedRegionId}
+        onRegionPress={(regionId) =>
+          onRegionPress?.(selectedRegionId === regionId ? undefined : regionId)
+        }
       />
 
       {regions.map((region) => (
@@ -103,7 +72,12 @@ export const InteractiveKoreaMap = ({
             name={regionLabels[region.id]}
             total={`${regionProgress[region.id]}%`}
             pointerEvents="none"
-            className={selectedRegionId === region.id ? "opacity-100" : "opacity-90"}
+            className={
+              selectedRegionId === region.id ? "opacity-100" : "opacity-90"
+            }
+            style={{
+              transform: [{ translateX: 5 }, { translateY: 5 }],
+            }}
           />
         </Pressable>
       ))}

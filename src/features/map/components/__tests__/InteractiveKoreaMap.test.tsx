@@ -2,12 +2,12 @@ import { fireEvent, render } from "@testing-library/react-native";
 
 import { InteractiveKoreaMap } from "../InteractiveKoreaMap";
 
-const mockKorea = jest.fn();
+const mockKoreaMap = jest.fn();
 const mockRegionMarker = jest.fn();
 
-jest.mock("@/components/Korea", () => ({
-  Korea: (props: unknown) => {
-    mockKorea(props);
+jest.mock("@/components/KoreaMap", () => ({
+  KoreaMap: (props: unknown) => {
+    mockKoreaMap(props);
     return null;
   },
 }));
@@ -20,6 +20,11 @@ jest.mock("@/components/ui/RegionMarker", () => {
 });
 
 describe("InteractiveKoreaMap", () => {
+  beforeEach(() => {
+    mockKoreaMap.mockClear();
+    mockRegionMarker.mockClear();
+  });
+
   it("calls onRegionPress with the pressed region id", async () => {
     const onRegionPress = jest.fn();
     const view = await render(
@@ -31,43 +36,63 @@ describe("InteractiveKoreaMap", () => {
     expect(onRegionPress).toHaveBeenCalledWith("gangwon");
   });
 
-  it("passes a lightly transparent primary fill to the selected region", async () => {
+  it("passes the selected region to the shared map", async () => {
     await render(<InteractiveKoreaMap selectedRegionId="gangwon" />);
 
-    expect(mockKorea).toHaveBeenCalledWith(
+    expect(mockKoreaMap).toHaveBeenCalledWith(
       expect.objectContaining({
-        regionColors: expect.objectContaining({
-          gangwon: "rgba(39, 199, 168, 0.22)",
-        }),
+        selectedRegionId: "gangwon",
       }),
     );
   });
 
-  it("highlights both Seoul and Gyeonggi when the Seoul region is selected", async () => {
-    await render(<InteractiveKoreaMap selectedRegionId="seoul" />);
+  it("keeps the base map fill unchanged when a region is selected", async () => {
+    const regionColors = { gangwon: "#123456" };
 
-    expect(mockKorea).toHaveBeenCalledWith(
+    await render(
+      <InteractiveKoreaMap
+        regionColors={regionColors}
+        selectedRegionId="gangwon"
+      />,
+    );
+
+    expect(mockKoreaMap).toHaveBeenCalledWith(
       expect.objectContaining({
-        regionColors: expect.objectContaining({
-          seoul: "rgba(39, 199, 168, 0.22)",
-          gyeonggi: "rgba(39, 199, 168, 0.22)",
-        }),
+        defaultFill: expect.any(String),
+        regionColors,
       }),
     );
   });
 
-  it("highlights metropolitan cities with their surrounding province group", async () => {
-    await render(<InteractiveKoreaMap selectedRegionId="gyeongnam" />);
+  it("handles shared map region presses", async () => {
+    const onRegionPress = jest.fn();
 
-    expect(mockKorea).toHaveBeenCalledWith(
-      expect.objectContaining({
-        regionColors: expect.objectContaining({
-          gyeongnam: "rgba(39, 199, 168, 0.22)",
-          busan: "rgba(39, 199, 168, 0.22)",
-          ulsan: "rgba(39, 199, 168, 0.22)",
-        }),
-      }),
+    await render(<InteractiveKoreaMap onRegionPress={onRegionPress} />);
+    const baseMapProps = mockKoreaMap.mock.calls[0][0] as {
+      onRegionPress: (regionId: string) => void;
+    };
+
+    baseMapProps.onRegionPress("gyeongnam");
+
+    expect(onRegionPress).toHaveBeenCalledWith("gyeongnam");
+  });
+
+  it("clears the selected region when the selected shared map region is pressed again", async () => {
+    const onRegionPress = jest.fn();
+
+    await render(
+      <InteractiveKoreaMap
+        selectedRegionId="gangwon"
+        onRegionPress={onRegionPress}
+      />,
     );
+    const baseMapProps = mockKoreaMap.mock.calls[0][0] as {
+      onRegionPress: (regionId: string) => void;
+    };
+
+    baseMapProps.onRegionPress("gangwon");
+
+    expect(onRegionPress).toHaveBeenCalledWith(undefined);
   });
 
   it("clears the selected region when the selected hit zone is pressed again", async () => {

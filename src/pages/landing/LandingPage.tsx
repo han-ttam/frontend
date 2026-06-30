@@ -1,5 +1,6 @@
 import { AppText } from "@/components/AppText";
-import { Korea } from "@/components/Korea";
+import { type KoreaRegionId } from "@/components/Korea";
+import { KoreaMap } from "@/components/KoreaMap";
 import ProgressCircle from "@/components/ui/ProgressCircle";
 import RegionMarker from "@/components/ui/RegionMarker";
 import { colors } from "@/constants/colors";
@@ -10,6 +11,8 @@ import { View } from "react-native";
 
 export default function LandingPage() {
   const [loadingProgress, setLoadingProgress] = useState(0);
+  const [selectedRegionId, setSelectedRegionId] =
+    useState<KoreaRegionId>();
 
   useEffect(() => {
     let mounted = true;
@@ -76,13 +79,17 @@ export default function LandingPage() {
       </AppText> */}
 
       <View className="relative w-full aspect-[800/1080]">
-        <Korea />
+        <KoreaMap
+          selectedRegionId={selectedRegionId}
+          onRegionPress={setSelectedRegionId}
+        />
 
         {regions.map((region) => (
           <RegionMarker
             key={region.id}
             name={regionLabels[region.id]}
             total={260}
+            pointerEvents="none"
             style={{
               position: "absolute",
               left: `${region.x * 100}%`,
