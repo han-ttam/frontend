@@ -5,13 +5,24 @@ import { type RegionId } from "@/constants/regions";
 import { InteractiveKoreaMap } from "@/features/map/components/InteractiveKoreaMap";
 import { TravelProofConsentModal } from "@/features/map/components/TravelProofConsentModal";
 import { Entypo, FontAwesome6 } from "@expo/vector-icons";
-import { Link } from "expo-router";
+import { Link, router } from "expo-router";
 import { useState } from "react";
 import { Image, Pressable, ScrollView, View } from "react-native";
 
 const MapPage = () => {
   const [selectedRegionId, setSelectedRegionId] = useState<RegionId>();
   const [isConsentVisible, setIsConsentVisible] = useState(false);
+  const openRegionDetail = (regionId: RegionId | undefined) => {
+    if (!regionId) {
+      return;
+    }
+
+    setSelectedRegionId(regionId);
+    router.push({
+      pathname: "/map/region/[id]",
+      params: { id: regionId },
+    });
+  };
 
   return (
     <>
@@ -69,7 +80,7 @@ const MapPage = () => {
           <View className="relative pb-12">
             <InteractiveKoreaMap
               selectedRegionId={selectedRegionId}
-              onRegionPress={setSelectedRegionId}
+              onRegionPress={openRegionDetail}
             />
 
             <Pressable
