@@ -8,19 +8,8 @@ import { Pressable, View, type ViewProps } from "react-native";
 type InteractiveKoreaMapProps = ViewProps & {
   selectedRegionId?: RegionId;
   regionColors?: Partial<Record<KoreaRegionId, string>>;
+  regionPercents?: Partial<Record<RegionId, number>>;
   onRegionPress?: (regionId: RegionId | undefined) => void;
-};
-
-const regionProgress: Record<RegionId, number> = {
-  seoul: 80,
-  gangwon: 70,
-  chungbuk: 55,
-  chungnam: 55,
-  gyeongbuk: 60,
-  gyeongnam: 60,
-  jeonbuk: 65,
-  jeonnam: 65,
-  jeju: 90,
 };
 
 const getRegionAccessibilityLabel = (regionId: RegionId) =>
@@ -29,6 +18,7 @@ const getRegionAccessibilityLabel = (regionId: RegionId) =>
 export const InteractiveKoreaMap = ({
   selectedRegionId,
   regionColors,
+  regionPercents = {},
   onRegionPress,
   className,
   ...props
@@ -44,9 +34,7 @@ export const InteractiveKoreaMap = ({
         regionColors={regionColors}
         defaultFill={colors["region-default"]}
         selectedRegionId={selectedRegionId}
-        onRegionPress={(regionId) =>
-          onRegionPress?.(selectedRegionId === regionId ? undefined : regionId)
-        }
+        onRegionPress={(regionId) => onRegionPress?.(regionId)}
       />
 
       {regions.map((region) => (
@@ -57,11 +45,7 @@ export const InteractiveKoreaMap = ({
           accessibilityLabel={getRegionAccessibilityLabel(region.id)}
           className="absolute min-h-11 min-w-11 items-center justify-center rounded-full"
           hitSlop={10}
-          onPress={() =>
-            onRegionPress?.(
-              selectedRegionId === region.id ? undefined : region.id,
-            )
-          }
+          onPress={() => onRegionPress?.(region.id)}
           style={{
             left: `${region.x * 100}%`,
             top: `${region.y * 100}%`,
@@ -70,7 +54,7 @@ export const InteractiveKoreaMap = ({
         >
           <RegionMarker
             name={regionLabels[region.id]}
-            total={`${regionProgress[region.id]}%`}
+            total={`${regionPercents[region.id] ?? 0}%`}
             pointerEvents="none"
             className={
               selectedRegionId === region.id ? "opacity-100" : "opacity-90"

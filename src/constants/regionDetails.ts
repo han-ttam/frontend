@@ -92,7 +92,7 @@ export const regionDetails: Record<RegionId, RegionDetail> = {
   },
   gangwon: {
     id: "gangwon",
-    title: "강원도",
+    title: "강원특별자치도",
     subtitle: "푸른 산과 바다, 자연이 빚은 힐링 여행지",
     totalCount: 21,
     completedCount: 15,

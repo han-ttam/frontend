@@ -4,14 +4,39 @@ import { recommendations } from "@/constants/recommendations";
 import { type RegionId } from "@/constants/regions";
 import { InteractiveKoreaMap } from "@/features/map/components/InteractiveKoreaMap";
 import { TravelProofConsentModal } from "@/features/map/components/TravelProofConsentModal";
+import { useMapData } from "@/features/map/useMapData";
 import { Entypo, FontAwesome6 } from "@expo/vector-icons";
 import { Link, router } from "expo-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Image, Pressable, ScrollView, View } from "react-native";
 
 const MapPage = () => {
   const [selectedRegionId, setSelectedRegionId] = useState<RegionId>();
   const [isConsentVisible, setIsConsentVisible] = useState(false);
+  const { data } = useMapData();
+  const progress = data?.summary.progress;
+  const progressPercent = progress?.percent ?? 0;
+  const progressCollected = progress?.collected ?? 0;
+  const progressTotal = progress?.total ?? 0;
+  const score = data?.summary.score ?? 0;
+  const nationalRank = data?.summary.nationalRank ?? 0;
+  const regionPercents = useMemo(() => {
+    return Object.fromEntries(
+      data?.provinces.map((province) => [
+        province.provinceCode,
+        province.percent,
+      ]) ?? [],
+    );
+  }, [data?.provinces]);
+  const todayRecommendations =
+    data?.todayDiscoveries.map((item) => ({
+      id: item.placeId,
+      title: item.name,
+      location: item.address,
+      imageUrl: item.imageUrl,
+      accent: colors.primary,
+      icon: "location-dot" as const,
+    })) ?? recommendations;
   const openRegionDetail = (regionId: RegionId | undefined) => {
     if (!regionId) {
       return;
@@ -52,18 +77,21 @@ const MapPage = () => {
                 </AppText>
                 <View className="flex-row items-center gap-1 ">
                   <AppText color="primary" className="font-extrabold">
-                    63%
+                    {progressPercent}%
                   </AppText>
                   <View className="h-2.5  flex-1 overflow-hidden rounded-full bg-surface">
-                    <View className="h-full w-[60%] rounded-full bg-primary" />
+                    <View
+                      className="h-full rounded-full bg-primary"
+                      style={{ width: `${progressPercent}%` }}
+                    />
                   </View>
                 </View>
 
                 <AppText variant="caption">
-                  102
+                  {progressCollected}
                   <AppText color="muted" variant="caption">
                     {" "}
-                    / 161 여행지
+                    / {progressTotal} 여행지
                   </AppText>
                 </AppText>
               </View>
@@ -71,15 +99,16 @@ const MapPage = () => {
 
             <View className="items-center justify-center gap-1 rounded-[18px] border border-muted bg-background p-3.5">
               <AppText color="muted" size={12}>
-                총 여행 점수 315점
+                총 여행 점수 {score}점
               </AppText>
-              <AppText variant="subtitle">전국 127위</AppText>
+              <AppText variant="subtitle">전국 {nationalRank}위</AppText>
             </View>
           </View>
 
           <View className="relative pb-12">
             <InteractiveKoreaMap
               selectedRegionId={selectedRegionId}
+              regionPercents={regionPercents}
               onRegionPress={openRegionDetail}
             />
 
@@ -119,7 +148,7 @@ const MapPage = () => {
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View className="flex-row gap-3 pr-5">
-                {recommendations.map((item) => (
+                {todayRecommendations.map((item) => (
                   <Link
                     key={item.id}
                     href={{
@@ -133,16 +162,24 @@ const MapPage = () => {
                       accessibilityLabel={`${item.title} 추천 여행지 보기`}
                       className="w-[168px] overflow-hidden rounded-xl border border-foreground/10 bg-surface"
                     >
-                      <View
-                        className="h-[102px] items-center justify-center"
-                        style={{ backgroundColor: item.accent }}
-                      >
-                        <FontAwesome6
-                          name={item.icon}
-                          size={34}
-                          color="rgba(244, 245, 244, 0.88)"
+                      {"imageUrl" in item && item.imageUrl ? (
+                        <Image
+                          source={{ uri: item.imageUrl }}
+                          className="h-[102px] w-full"
+                          resizeMode="cover"
                         />
-                      </View>
+                      ) : (
+                        <View
+                          className="h-[102px] items-center justify-center"
+                          style={{ backgroundColor: item.accent }}
+                        >
+                          <FontAwesome6
+                            name={item.icon}
+                            size={34}
+                            color="rgba(244, 245, 244, 0.88)"
+                          />
+                        </View>
+                      )}
                       <View className="gap-1.5 p-3">
                         <AppText className="text-base font-bold leading-[22px]">
                           {item.title}
