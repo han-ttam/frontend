@@ -1,5 +1,6 @@
 import LandingPage from "@/pages/landing/LandingPage";
 import { useMapData } from "@/features/map/useMapData";
+import { useAuth } from "@/stores/authStore";
 import { Redirect } from "expo-router";
 import { useEffect, useState } from "react";
 
@@ -8,6 +9,7 @@ const LANDING_COMPLETE_HOLD_MS = 350;
 
 export default function HomeScreen() {
   const { data, error, isLoading } = useMapData();
+  const { hasSkippedLogin, isAuthenticated, isHydrated } = useAuth();
   const [canLeaveLanding, setCanLeaveLanding] = useState(false);
   const [canRedirect, setCanRedirect] = useState(false);
 
@@ -35,8 +37,12 @@ export default function HomeScreen() {
     };
   }, [canLeaveLanding, data]);
 
-  if (data && canRedirect) {
-    return <Redirect href="/map" />;
+  if (data && canRedirect && isHydrated) {
+    // Login is a suggestion, not a wall: offer it once, and let anyone who
+    // skipped it browse straight to the map on later launches.
+    const shouldSuggestLogin = !isAuthenticated && !hasSkippedLogin;
+
+    return <Redirect href={shouldSuggestLogin ? "/login" : "/map"} />;
   }
 
   return (
