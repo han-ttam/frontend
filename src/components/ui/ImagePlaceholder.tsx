@@ -4,10 +4,12 @@ import { Entypo } from "@expo/vector-icons";
 import { View, type ViewProps } from "react-native";
 
 type ImagePlaceholderProps = ViewProps & {
+  compact?: boolean;
   label?: string;
 };
 
 export const ImagePlaceholder = ({
+  compact = false,
   label = "이미지 준비중",
   style,
   className,
@@ -16,7 +18,8 @@ export const ImagePlaceholder = ({
   return (
     <View
       className={[
-        "items-center justify-center gap-2 overflow-hidden bg-surface",
+        "items-center justify-center overflow-hidden bg-surface",
+        compact ? "gap-1" : "gap-2",
         className,
       ]
         .filter(Boolean)
@@ -24,10 +27,23 @@ export const ImagePlaceholder = ({
       style={[{ borderColor: "rgba(244, 245, 244, 0.12)" }, style]}
       {...props}
     >
-      <View className="h-9 w-9 items-center justify-center rounded-full bg-primary/10">
-        <Entypo name="image" size={20} color={colors.primary} />
+      <View
+        className={[
+          "items-center justify-center rounded-full bg-primary/10",
+          compact ? "h-5 w-5" : "h-9 w-9",
+        ].join(" ")}
+      >
+        <Entypo name="image" size={compact ? 12 : 20} color={colors.primary} />
       </View>
-      <AppText color="muted" size={13} style={{ fontWeight: "700" }}>
+      <AppText
+        color="muted"
+        size={compact ? 10 : 13}
+        style={{
+          fontWeight: "700",
+          lineHeight: compact ? 12 : 18,
+          textAlign: "center",
+        }}
+      >
         {label}
       </AppText>
     </View>

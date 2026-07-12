@@ -471,6 +471,7 @@ export default function RegionDetailPage() {
                     />
                   ) : (
                     <ImagePlaceholder
+                      compact
                       label="준비중"
                       className="rounded-lg border border-foreground/10"
                       style={{
