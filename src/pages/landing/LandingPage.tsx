@@ -5,58 +5,71 @@ import ProgressCircle from "@/components/ui/ProgressCircle";
 import RegionMarker from "@/components/ui/RegionMarker";
 import { colors } from "@/constants/colors";
 import { regionLabels, regions } from "@/constants/regions";
+import { useLandingData } from "@/features/landing/useLandingData";
+import type { LandingDto } from "@/lib/api/landing";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 
-export default function LandingPage() {
+const DEFAULT_MIN_LOADING_DURATION_MS = 2400;
+const COMPLETE_PROGRESS_RATIO = 0.9;
+
+type LandingPageProps = {
+  data?: Pick<LandingDto, "summary" | "provinces">;
+  error?: Error;
+  isLoading?: boolean;
+  minLoadingDurationMs?: number;
+};
+
+export default function LandingPage({
+  data: externalData,
+  error: externalError,
+  isLoading: externalIsLoading,
+  minLoadingDurationMs = DEFAULT_MIN_LOADING_DURATION_MS,
+}: LandingPageProps = {}) {
   const [loadingProgress, setLoadingProgress] = useState(0);
+  const loadingStartedAt = useRef(Date.now());
   const [selectedRegionId, setSelectedRegionId] =
     useState<KoreaRegionId>();
+  const hasExternalState =
+    externalData != null ||
+    externalError != null ||
+    externalIsLoading != null;
+  const landingQuery = useLandingData(!hasExternalState);
+  const data = externalData ?? landingQuery.data;
+  const error = externalError ?? landingQuery.error;
+  const isLoading = externalIsLoading ?? landingQuery.isLoading;
 
   useEffect(() => {
     let mounted = true;
     const progressLimit = 0.92;
+    const progressDurationMs =
+      minLoadingDurationMs * COMPLETE_PROGRESS_RATIO;
 
     const progressTimer = setInterval(() => {
-      setLoadingProgress((progress) => {
-        if (progress >= progressLimit) {
-          return progress;
-        }
-
-        const distanceToLimit = progressLimit - progress;
-        return Math.min(
-          progressLimit,
-          progress + Math.max(0.0007, distanceToLimit * 0.008),
-        );
-      });
-    }, 240);
-
-    const loadLandingData = async () => {
-      try {
-        // 예: 지역 데이터 준비
-        await new Promise((resolve) => setTimeout(resolve, 2400));
-        await new Promise((resolve) => setTimeout(resolve, 1200));
-
-        // 예: 여행 기록 데이터 요청
-
-        // 예: 화면에 필요한 데이터 정리
-      } finally {
-        clearInterval(progressTimer);
-
-        if (mounted) {
-          setLoadingProgress(1);
-        }
+      if (!mounted) {
+        return;
       }
-    };
 
-    loadLandingData();
+      const elapsedMs = Date.now() - loadingStartedAt.current;
+      const timeProgress = Math.min(1, elapsedMs / progressDurationMs);
+      const nextProgress = isLoading
+        ? Math.min(progressLimit, timeProgress)
+        : timeProgress;
+
+      setLoadingProgress(nextProgress);
+    }, 50);
 
     return () => {
       mounted = false;
       clearInterval(progressTimer);
     };
-  }, []);
+  }, [isLoading, minLoadingDurationMs]);
+
+  const provinceByCode = new Map(
+    data?.provinces.map((province) => [province.provinceCode, province]),
+  );
+  const progress = data?.summary.progress;
 
   return (
     <View className="items-center justify-center w-screen h-full gap-5 bg-background">
@@ -88,7 +101,7 @@ export default function LandingPage() {
           <RegionMarker
             key={region.id}
             name={regionLabels[region.id]}
-            total={260}
+            total={provinceByCode.get(region.id)?.collected ?? "-"}
             pointerEvents="none"
             style={{
               position: "absolute",
@@ -105,7 +118,11 @@ export default function LandingPage() {
         <View>
           <AppText size={16}>여행 기록 불러오는 중</AppText>
           <AppText variant="body" color="muted">
-            전국 여행 데이터를 수집하고 있어요
+            {error
+              ? "API data is not available. Check EXPO_PUBLIC_API_BASE_URL."
+              : progress
+                ? `${progress.collected} / ${progress.total}`
+                : "전국 여행 데이터를 수집하고 있어요"}
           </AppText>
         </View>
       </View>
