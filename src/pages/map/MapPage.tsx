@@ -1,11 +1,12 @@
 import { AppText } from "@/components/AppText";
+import { ImagePlaceholder } from "@/components/ui/ImagePlaceholder";
 import { colors } from "@/constants/colors";
 import { recommendations } from "@/constants/recommendations";
 import { type RegionId } from "@/constants/regions";
 import { InteractiveKoreaMap } from "@/features/map/components/InteractiveKoreaMap";
 import { TravelProofConsentModal } from "@/features/map/components/TravelProofConsentModal";
 import { useMapData } from "@/features/map/useMapData";
-import { Entypo, FontAwesome6 } from "@expo/vector-icons";
+import { Entypo } from "@expo/vector-icons";
 import { Link, router } from "expo-router";
 import { useMemo, useState } from "react";
 import { Image, Pressable, ScrollView, View } from "react-native";
@@ -169,16 +170,7 @@ const MapPage = () => {
                           resizeMode="cover"
                         />
                       ) : (
-                        <View
-                          className="h-[102px] items-center justify-center"
-                          style={{ backgroundColor: item.accent }}
-                        >
-                          <FontAwesome6
-                            name={item.icon}
-                            size={34}
-                            color="rgba(244, 245, 244, 0.88)"
-                          />
-                        </View>
+                        <ImagePlaceholder className="h-[102px] w-full" />
                       )}
                       <View className="gap-1.5 p-3">
                         <AppText className="text-base font-bold leading-[22px]">

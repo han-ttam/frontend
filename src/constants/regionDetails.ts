@@ -6,7 +6,7 @@ export type RegionSpot = {
   id: string;
   title: string;
   address: string;
-  imageUrl: string;
+  imageUrl: string | null;
   status: RegionSpotStatus;
 };
 

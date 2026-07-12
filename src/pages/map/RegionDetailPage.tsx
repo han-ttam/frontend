@@ -1,4 +1,5 @@
 import { AppText } from "@/components/AppText";
+import { ImagePlaceholder } from "@/components/ui/ImagePlaceholder";
 import { KoreaMap } from "@/components/KoreaMap";
 import { colors } from "@/constants/colors";
 import {
@@ -159,21 +160,17 @@ export default function RegionDetailPage() {
             id: apiRecommendation.placeId,
             title: apiRecommendation.name,
             address: apiRecommendation.address,
-            imageUrl:
-              apiRecommendation.imageUrl ?? staticDetail.recommendation.imageUrl,
+            imageUrl: apiRecommendation.imageUrl,
             status: "planned",
           }
         : staticDetail.recommendation,
       spots:
-        apiPlaces?.items.map((place, index) => {
-          const fallbackSpot =
-            staticDetail.spots[index % staticDetail.spots.length];
-
+        apiPlaces?.items.map((place) => {
           return {
             id: place.placeId,
             title: place.name,
             address: place.address,
-            imageUrl: place.imageUrl ?? fallbackSpot.imageUrl,
+            imageUrl: place.imageUrl,
             status: toRegionSpotStatus(place.visitStatus),
           };
         }) ?? staticDetail.spots,
@@ -195,8 +192,7 @@ export default function RegionDetailPage() {
       id: apiRecommendation.placeId,
       title: apiRecommendation.name,
       address: apiRecommendation.address,
-      imageUrl:
-        apiRecommendation.imageUrl ?? staticDetail.recommendation.imageUrl,
+      imageUrl: apiRecommendation.imageUrl,
       status: "planned" as const,
     };
   }, [data?.recommended, staticDetail]);
@@ -357,15 +353,25 @@ export default function RegionDetailPage() {
                 isCompact ? "" : "flex-row",
               ].join(" ")}
             >
-              <Image
-                source={{ uri: recommendation.imageUrl }}
-                className="rounded-xl"
-                style={{
-                  width: isCompact ? "100%" : 132,
-                  height: isCompact ? 150 : 116,
-                }}
-                resizeMode="cover"
-              />
+              {recommendation.imageUrl ? (
+                <Image
+                  source={{ uri: recommendation.imageUrl }}
+                  className="rounded-xl"
+                  style={{
+                    width: isCompact ? "100%" : 132,
+                    height: isCompact ? 150 : 116,
+                  }}
+                  resizeMode="cover"
+                />
+              ) : (
+                <ImagePlaceholder
+                  className="rounded-xl border border-foreground/10"
+                  style={{
+                    width: isCompact ? "100%" : 132,
+                    height: isCompact ? 150 : 116,
+                  }}
+                />
+              )}
               <View className="flex-1 justify-center gap-3">
                 <View className="flex-row items-center gap-2">
                   <Entypo name="location-pin" size={22} color={colors.primary} />
@@ -453,15 +459,26 @@ export default function RegionDetailPage() {
                       />
                     </View>
                   </View>
-                  <Image
-                    source={{ uri: spot.imageUrl }}
-                    className="rounded-lg"
-                    style={{
-                      width: thumbnailWidth,
-                      height: thumbnailWidth * 0.68,
-                    }}
-                    resizeMode="cover"
-                  />
+                  {spot.imageUrl ? (
+                    <Image
+                      source={{ uri: spot.imageUrl }}
+                      className="rounded-lg"
+                      style={{
+                        width: thumbnailWidth,
+                        height: thumbnailWidth * 0.68,
+                      }}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <ImagePlaceholder
+                      label="준비중"
+                      className="rounded-lg border border-foreground/10"
+                      style={{
+                        width: thumbnailWidth,
+                        height: thumbnailWidth * 0.68,
+                      }}
+                    />
+                  )}
                   <View className="flex-1 gap-1">
                     <AppText variant="subtitle" numberOfLines={1}>
                       {spot.title}
