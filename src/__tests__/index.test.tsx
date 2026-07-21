@@ -8,6 +8,11 @@ let mockMapState = {
   error: undefined as Error | undefined,
   isLoading: true,
 };
+let mockAuthState = {
+  hasSkippedLogin: false,
+  isAuthenticated: false,
+  isHydrated: true,
+};
 
 jest.mock("expo-router", () => ({
   Redirect: (props: unknown) => {
@@ -26,6 +31,44 @@ jest.mock("@/features/map/useMapData", () => ({
   useMapData: () => mockMapState,
 }));
 
+jest.mock("@/stores/authStore", () => ({
+  useAuth: () => mockAuthState,
+}));
+
+const loadedMapState = {
+  data: {
+    summary: {
+      score: 0,
+      nationalRank: 0,
+      totalUsers: 0,
+      progress: {
+        percent: 0,
+        collected: 0,
+        total: 0,
+      },
+    },
+    provinces: [],
+    todayDiscoveries: [],
+  },
+  error: undefined,
+  isLoading: false,
+};
+
+const settleLanding = async (view: Awaited<ReturnType<typeof render>>) => {
+  await act(async () => {
+    await jest.advanceTimersByTimeAsync(2400);
+  });
+  await act(async () => {
+    view.rerender(<HomeScreen />);
+  });
+  await act(async () => {
+    await jest.advanceTimersByTimeAsync(350);
+  });
+  await act(async () => {
+    view.rerender(<HomeScreen />);
+  });
+};
+
 describe("HomeScreen", () => {
   beforeEach(() => {
     jest.useFakeTimers();
@@ -34,6 +77,11 @@ describe("HomeScreen", () => {
       data: undefined,
       error: undefined,
       isLoading: true,
+    };
+    mockAuthState = {
+      hasSkippedLogin: false,
+      isAuthenticated: false,
+      isHydrated: true,
     };
   });
 
@@ -49,70 +97,67 @@ describe("HomeScreen", () => {
   });
 
   it("keeps the landing page visible until the minimum duration passes", async () => {
-    mockMapState = {
-      data: {
-        summary: {
-          score: 0,
-          nationalRank: 0,
-          totalUsers: 0,
-          progress: {
-            percent: 0,
-            collected: 0,
-            total: 0,
-          },
-        },
-        provinces: [],
-        todayDiscoveries: [],
-      },
-      error: undefined,
-      isLoading: false,
-    };
+    mockMapState = loadedMapState;
 
     await render(<HomeScreen />);
 
     expect(mockRedirect).not.toHaveBeenCalled();
   });
 
-  it("redirects to the map after map data is loaded and the completion hold passes", async () => {
-    mockMapState = {
-      data: {
-        summary: {
-          score: 0,
-          nationalRank: 0,
-          totalUsers: 0,
-          progress: {
-            percent: 0,
-            collected: 0,
-            total: 0,
-          },
-        },
-        provinces: [],
-        todayDiscoveries: [],
-      },
-      error: undefined,
-      isLoading: false,
+  it("suggests login to a guest who has not skipped it yet", async () => {
+    mockMapState = loadedMapState;
+
+    const view = await render(<HomeScreen />);
+    await settleLanding(view);
+
+    expect(mockRedirect).toHaveBeenCalledWith(
+      expect.objectContaining({ href: "/login" }),
+    );
+  });
+
+  it("redirects to the map once the guest has skipped login", async () => {
+    mockMapState = loadedMapState;
+    mockAuthState = {
+      hasSkippedLogin: true,
+      isAuthenticated: false,
+      isHydrated: true,
     };
 
     const view = await render(<HomeScreen />);
-
-    await act(async () => {
-      await jest.advanceTimersByTimeAsync(2400);
-    });
-    await act(async () => {
-      view.rerender(<HomeScreen />);
-    });
-
-    expect(mockRedirect).not.toHaveBeenCalled();
-
-    await act(async () => {
-      await jest.advanceTimersByTimeAsync(350);
-    });
-    await act(async () => {
-      view.rerender(<HomeScreen />);
-    });
+    await settleLanding(view);
 
     expect(mockRedirect).toHaveBeenCalledWith(
       expect.objectContaining({ href: "/map" }),
     );
+  });
+
+  it("redirects a signed-in user straight to the map", async () => {
+    mockMapState = loadedMapState;
+    mockAuthState = {
+      hasSkippedLogin: false,
+      isAuthenticated: true,
+      isHydrated: true,
+    };
+
+    const view = await render(<HomeScreen />);
+    await settleLanding(view);
+
+    expect(mockRedirect).toHaveBeenCalledWith(
+      expect.objectContaining({ href: "/map" }),
+    );
+  });
+
+  it("waits for the stored session to load before redirecting", async () => {
+    mockMapState = loadedMapState;
+    mockAuthState = {
+      hasSkippedLogin: false,
+      isAuthenticated: false,
+      isHydrated: false,
+    };
+
+    const view = await render(<HomeScreen />);
+    await settleLanding(view);
+
+    expect(mockRedirect).not.toHaveBeenCalled();
   });
 });

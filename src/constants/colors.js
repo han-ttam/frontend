@@ -6,4 +6,6 @@ export const colors = {
   primary: "#27C7A8",
   "region-default": "#191C1E",
   "region-stroke": "#466A62",
+  kakao: "#FED20A",
+  "kakao-foreground": "#080A09",
 };
