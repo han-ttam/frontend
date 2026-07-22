@@ -1,5 +1,4 @@
 import { AppText } from "@/components/AppText";
-import { getRegionIdByApiCode } from "@/constants/regionCodes";
 import { CollectionTabs } from "@/features/collection/components/CollectionTabs";
 import { OverviewCard } from "@/features/collection/components/OverviewCard";
 import { RecentList } from "@/features/collection/components/RecentList";
@@ -17,25 +16,17 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { ScrollView, View } from "react-native";
 
-const canOpenRegionDetail = (region: DogamRegion) => {
-  return getRegionIdByApiCode(region.provinceCode) !== undefined;
-};
-
 const CollectionPage = () => {
   const [tab, setTab] = useState<DogamTab>("regions");
   const { maxContentWidth, horizontalPadding, isCompact } =
     useCollectionLayout();
 
+  // 도감 전용 상세는 provinceCode 를 그대로 키로 쓴다.
+  // RegionId 변환이 없어져 잠금 아닌 도 카드가 전부 열린다 (충청도·경상도·전라도·울릉도·독도 포함).
   const openRegionDetail = (region: DogamRegion) => {
-    const regionId = getRegionIdByApiCode(region.provinceCode);
-
-    if (!regionId) {
-      return;
-    }
-
     router.push({
-      pathname: "/map/region/[id]",
-      params: { id: regionId },
+      pathname: "/collection/region/[code]",
+      params: { code: region.provinceCode },
     });
   };
 
@@ -71,7 +62,6 @@ const CollectionPage = () => {
           <RegionGrid
             regions={dogamRegions}
             onSelectRegion={openRegionDetail}
-            isRegionOpenable={canOpenRegionDetail}
           />
         ) : null}
 

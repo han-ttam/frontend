@@ -49,16 +49,37 @@ describe("CollectionPage", () => {
     expect(view.getByText("서울 · 경기")).toBeTruthy();
   });
 
-  it("opens the region detail for a mapped province code", async () => {
+  it("opens the dogam region detail with the province code", async () => {
     const view = await render(<CollectionPage />);
 
     await fireEvent.press(view.getByTestId("collection-region-32"));
 
     expect(mockPush).toHaveBeenCalledWith({
-      pathname: "/map/region/[id]",
-      params: { id: "gangwon" },
+      pathname: "/collection/region/[code]",
+      params: { code: "32" },
     });
   });
+
+  // 도감 상세가 provinceCode 를 직접 키로 쓰면서, RegionId 로 풀리지 않아
+  // 눌리지 않던 묶음 카드들이 열리게 됐다.
+  it.each([
+    ["33", "충청도"],
+    ["35", "경상도"],
+    ["37", "전라도"],
+    ["90", "울릉도 · 독도"],
+  ])(
+    "opens grouped region %s (%s) that used to be blocked",
+    async (code) => {
+      const view = await render(<CollectionPage />);
+
+      await fireEvent.press(view.getByTestId(`collection-region-${code}`));
+
+      expect(mockPush).toHaveBeenCalledWith({
+        pathname: "/collection/region/[code]",
+        params: { code },
+      });
+    },
+  );
 
   it("does not open a locked region", async () => {
     const view = await render(<CollectionPage />);
