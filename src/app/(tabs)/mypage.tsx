@@ -1,7 +1,7 @@
-import { View } from "react-native";
+import MyPage from "@/pages/mypage/MyPage";
 
 const MypageScreen = () => {
-  return <View>mypage</View>;
+  return <MyPage />;
 };
 
 export default MypageScreen;

@@ -77,7 +77,7 @@ describe("InteractiveKoreaMap", () => {
     expect(onRegionPress).toHaveBeenCalledWith("gyeongnam");
   });
 
-  it("clears the selected region when the selected shared map region is pressed again", async () => {
+  it("keeps emitting the selected region when the selected shared map region is pressed again", async () => {
     const onRegionPress = jest.fn();
 
     await render(
@@ -92,10 +92,10 @@ describe("InteractiveKoreaMap", () => {
 
     baseMapProps.onRegionPress("gangwon");
 
-    expect(onRegionPress).toHaveBeenCalledWith(undefined);
+    expect(onRegionPress).toHaveBeenCalledWith("gangwon");
   });
 
-  it("clears the selected region when the selected hit zone is pressed again", async () => {
+  it("keeps emitting the selected region when the selected hit zone is pressed again", async () => {
     const onRegionPress = jest.fn();
     const view = await render(
       <InteractiveKoreaMap
@@ -106,16 +106,16 @@ describe("InteractiveKoreaMap", () => {
 
     fireEvent.press(view.getByTestId("region-hit-zone-gangwon"));
 
-    expect(onRegionPress).toHaveBeenCalledWith(undefined);
+    expect(onRegionPress).toHaveBeenCalledWith("gangwon");
   });
 
-  it("passes region progress as a percentage label to markers", async () => {
-    await render(<InteractiveKoreaMap />);
+  it("passes dynamic region progress as percentage labels to markers", async () => {
+    await render(<InteractiveKoreaMap regionPercents={{ gangwon: 0 }} />);
 
     expect(mockRegionMarker).toHaveBeenCalledWith(
       expect.objectContaining({
         name: expect.any(String),
-        total: expect.stringMatching(/%$/),
+        total: "0%",
       }),
     );
   });
