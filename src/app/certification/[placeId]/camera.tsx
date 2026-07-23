@@ -87,7 +87,7 @@ export default function CameraScreen() {
 
   const compositions = data ? getCompositions(placeId) : [];
 
-  // 화면 포커스를 잃으면(다른 화면으로 이동·백그라운드 전환) CameraView를 언마운트해 카메라 하드웨어를 해제한다.
+  // 화면 포커스를 잃으면(다른 화면으로 이동·백그라운드 전환) CameraView를 언마운트해 카메라 하드웨어를 해제합니다.
   useFocusEffect(
     useCallback(() => {
       setIsFocused(true);
