@@ -28,5 +28,8 @@ export const useMypageLayout = () => {
     scoreColumnWidth: isCompact ? 54 : 64,
     tableTextSize: isCompact ? 12 : 13,
     tableHeaderSize: isCompact ? 11 : 12,
+    rowThumbSize: isCompact ? 56 : 64,
+    checkSize: isCompact ? 24 : 26,
+    rowGap: isCompact ? 10 : 12,
   };
 };

@@ -8,9 +8,13 @@ import {
   mypageProfile,
   mypageRankings,
 } from "@/features/mypage/mockData";
-import type { RankingPeriod } from "@/features/mypage/types";
+import type {
+  MypageCollectionItem,
+  RankingPeriod,
+} from "@/features/mypage/types";
 import { useMypageLayout } from "@/features/mypage/useMypageLayout";
 import { Feather } from "@expo/vector-icons";
+import { router } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 
@@ -29,6 +33,13 @@ const MyPage = () => {
   const profile = mypageProfile;
   const collections = mypageCollections;
   const ranking = mypageRankings[period];
+
+  const handleSelectCollection = (collection: MypageCollectionItem) => {
+    router.push({
+      pathname: "/mypage/collections/[id]",
+      params: { id: collection.id },
+    });
+  };
 
   return (
     <ScrollView
@@ -96,7 +107,10 @@ const MyPage = () => {
         </View>
 
         {tab === "collections" ? (
-          <CollectionProgressTab collections={collections} />
+          <CollectionProgressTab
+            collections={collections}
+            onSelectCollection={handleSelectCollection}
+          />
         ) : (
           <RankingTab
             profile={profile}
