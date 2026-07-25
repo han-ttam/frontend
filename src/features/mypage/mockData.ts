@@ -33,7 +33,7 @@ export const mypageCollections: MypageCollections = {
     {
       id: "hangang-picnic",
       title: "한강 피크닉 명소 모음",
-      filled: 10,
+      filled: 7,
       total: 10,
       coverImageUrl: photo("photo-1502920917128-1aa500764cbd", 400),
       thumbnails: [
