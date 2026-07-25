@@ -1,5 +1,4 @@
-const DEFAULT_API_BASE_URL =
-  "https://further-cgi-webcast-accommodations.trycloudflare.com";
+const DEFAULT_API_BASE_URL = "https://api.handdam.store/api";
 
 export const getApiBaseUrl = () => {
   return process.env.EXPO_PUBLIC_API_BASE_URL ?? DEFAULT_API_BASE_URL;
@@ -7,19 +6,33 @@ export const getApiBaseUrl = () => {
 
 const buildApiUrl = (path: string) => {
   const baseUrl = getApiBaseUrl().replace(/\/$/, "");
-  return `${baseUrl}${path}`;
+  const normalizedPath =
+    baseUrl.endsWith("/api") && path.startsWith("/api/")
+      ? path.slice(4)
+      : path;
+
+  return `${baseUrl}${normalizedPath}`;
 };
 
 export const requestJson = async <T>(
   path: string,
   signal?: AbortSignal,
+  init?: RequestInit,
 ) => {
+  const headers = new Headers(init?.headers);
+
+  if (!headers.has("Accept")) {
+    headers.set("Accept", "application/json");
+  }
+
+  if (!headers.has("Accept-Language")) {
+    headers.set("Accept-Language", "ko");
+  }
+
   const response = await fetch(buildApiUrl(path), {
     method: "GET",
-    headers: {
-      Accept: "application/json",
-      "Accept-Language": "ko",
-    },
+    ...init,
+    headers,
     signal,
   });
 
