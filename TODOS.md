@@ -77,3 +77,20 @@ currently enforces it.
 related drift, but doesn't directly validate this specific override.
 
 **Depends on / blocked by:** none.
+
+## GPS 권한 거부 시 지도 탭으로 안내
+
+**What:** 근처 화면(`(tabs)/photo.tsx`)에서 GPS 권한이 거부됐을 때, 설정 이동 버튼 대신(또는
+함께) 위치 없이도 볼 수 있는 지도 탭으로 안내하는 버튼을 추가한다.
+
+**Why:** 지금은 인라인 안내 + 설정 이동 버튼만 제공한다. 위치 권한을 영구 거부한 사용자는 이
+화면에서 막다른 상태에 갇힌다.
+
+**Pros:** 권한 거부 사용자도 앱의 다른 가치(지도 탐색)에 계속 접근 가능 — 이탈 방지.
+
+**Cons:** 지금 스코프에는 없는 탭 간 네비게이션 로직이 추가로 필요함.
+
+**Context:** 인증 탭 진입점 설계(office-hours/eng-review/design-review, 2026-07-11)에서
+논의됨 — 인라인 거부 상태는 이번 스코프에 포함, 지도 탭 안내는 후속 과제로 분리.
+
+**Depends on / blocked by:** none.
