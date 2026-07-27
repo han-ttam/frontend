@@ -22,6 +22,7 @@ export type RegionPlaceDto = {
   address: string;
   imageUrl: string | null;
   visitStatus: RegionPlaceStatusDto;
+  isFavorite?: boolean;
 };
 
 export type RegionPlacesStatusParam = "ALL" | "VISITED";
@@ -41,6 +42,7 @@ export type RegionRecommendedPlaceDto = {
   name: string;
   address: string;
   imageUrl: string | null;
+  isFavorite?: boolean;
 };
 
 export type RegionDetailDataDto = {

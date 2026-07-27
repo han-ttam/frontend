@@ -42,7 +42,7 @@ describe("landing API", () => {
     delete process.env.EXPO_PUBLIC_API_BASE_URL;
 
     expect(getApiBaseUrl()).toBe(
-      "https://further-cgi-webcast-accommodations.trycloudflare.com",
+      "https://api.handdam.store/api",
     );
   });
 

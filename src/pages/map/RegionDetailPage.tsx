@@ -30,6 +30,7 @@ const FILTERS = [
   { id: "all", label: "전체", apiStatus: "ALL" },
   { id: "completed", label: "방문 완료", apiStatus: "VISITED" },
   { id: "planned", label: "방문 예정", apiStatus: "ALL" },
+  { id: "favorite", label: "찜한 곳", apiStatus: "ALL" },
 ] as const;
 
 type SpotFilter = (typeof FILTERS)[number]["id"];
@@ -55,6 +56,7 @@ const emptySpotMessage: Record<SpotFilter, string> = {
   all: "표시할 여행지가 아직 없어요.",
   completed: "방문 완료한 여행지가 아직 없어요.",
   planned: "방문 예정 여행지가 아직 없어요.",
+  favorite: "찜한 여행지가 아직 없어요.",
 };
 
 const ProgressRing = ({
@@ -143,6 +145,9 @@ export default function RegionDetailPage() {
     const apiDetail = data?.detail;
     const apiPlaces = data?.places;
     const apiRecommendation = data?.recommended[0];
+    const staticSpotsById = new Map(
+      staticDetail.spots.map((spot) => [spot.id, spot]),
+    );
 
     if (!apiDetail && !apiPlaces && !apiRecommendation) {
       return staticDetail;
@@ -162,16 +167,23 @@ export default function RegionDetailPage() {
             address: apiRecommendation.address,
             imageUrl: apiRecommendation.imageUrl,
             status: "planned",
+            isFavorite:
+              apiRecommendation.isFavorite ??
+              staticDetail.recommendation.isFavorite ??
+              false,
           }
         : staticDetail.recommendation,
       spots:
         apiPlaces?.items.map((place) => {
+          const staticSpot = staticSpotsById.get(place.placeId);
+
           return {
             id: place.placeId,
             title: place.name,
             address: place.address,
             imageUrl: place.imageUrl,
             status: toRegionSpotStatus(place.visitStatus),
+            isFavorite: place.isFavorite ?? staticSpot?.isFavorite ?? false,
           };
         }) ?? staticDetail.spots,
     };
@@ -194,6 +206,10 @@ export default function RegionDetailPage() {
       address: apiRecommendation.address,
       imageUrl: apiRecommendation.imageUrl,
       status: "planned" as const,
+      isFavorite:
+        apiRecommendation.isFavorite ??
+        staticDetail.recommendation.isFavorite ??
+        false,
     };
   }, [data?.recommended, staticDetail]);
 
@@ -204,6 +220,10 @@ export default function RegionDetailPage() {
 
     if (filter === "all") {
       return detail.spots;
+    }
+
+    if (filter === "favorite") {
+      return detail.spots.filter((spot) => spot.isFavorite);
     }
 
     return detail.spots.filter((spot) => spot.status === filter);
@@ -218,6 +238,13 @@ export default function RegionDetailPage() {
   const counts = data?.places.counts;
   const plannedCountFromCounts =
     counts == null ? undefined : Math.max(0, counts.all - counts.visited);
+  const favoriteCount = useMemo(() => {
+    if (!detail) {
+      return 0;
+    }
+
+    return detail.spots.filter((spot) => spot.isFavorite).length;
+  }, [detail]);
   const hasMoreSpots = Boolean(data?.places.nextCursor);
 
   const handleScroll = ({
@@ -411,11 +438,15 @@ export default function RegionDetailPage() {
           <View className="flex-row flex-wrap gap-2">
             {FILTERS.map((item) => {
               const count =
-                (item.id === "planned"
+                (item.id === "favorite"
+                  ? favoriteCount
+                  : item.id === "planned"
                   ? plannedCountFromCounts
                   : counts?.[item.id === "completed" ? "visited" : item.id]) ??
                 (item.id === "all"
                   ? totalCount
+                  : item.id === "favorite"
+                    ? favoriteCount
                   : detail.spots.filter((spot) => spot.status === item.id)
                       .length);
               const isSelected = filter === item.id;
@@ -509,6 +540,17 @@ export default function RegionDetailPage() {
                       </AppText>
                     </View>
                   </View>
+                  {spot.isFavorite ? (
+                    <View className="rounded-full bg-primary/10 px-3 py-1.5">
+                      <AppText
+                        color="primary"
+                        size={12}
+                        style={{ fontWeight: "800" }}
+                      >
+                        찜
+                      </AppText>
+                    </View>
+                  ) : null}
                   <View className="rounded-full bg-primary/10 px-3 py-1.5">
                     <AppText
                       color="primary"
