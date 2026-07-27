@@ -228,6 +228,13 @@ export default function RegionDetailPage() {
 
     return detail.spots.filter((spot) => spot.status === filter);
   }, [detail, filter]);
+  /**
+   * API가 비면 정적 목데이터(slug id)로 폴백하는데, 그 id로는 장소 상세를 열 수 없다.
+   * 그래서 서버에서 내려온 장소만 상세로 보낸다.
+   */
+  const apiPlaceIds = useMemo(() => {
+    return new Set(data?.places.items.map((place) => place.placeId) ?? []);
+  }, [data?.places.items]);
   const counts = data?.places.counts;
   const plannedCountFromCounts =
     counts == null ? undefined : Math.max(0, counts.all - counts.visited);
@@ -476,6 +483,13 @@ export default function RegionDetailPage() {
                     "flex-row items-center gap-3 px-4 py-3",
                     index > 0 ? "border-t border-foreground/10" : "",
                   ].join(" ")}
+                  disabled={!apiPlaceIds.has(spot.id)}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/map/list/[id]",
+                      params: { id: spot.id },
+                    })
+                  }
                 >
                   <View className="h-9 w-9 items-center justify-center">
                     <View className="h-8 w-8 items-center justify-center rounded-full bg-primary">
