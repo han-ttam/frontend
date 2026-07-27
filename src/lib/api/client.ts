@@ -44,18 +44,27 @@ const readErrorBody = async (response: Response) => {
 };
 
 type RequestOptions = {
-  method?: "GET" | "POST";
+  method?: NonNullable<RequestInit["method"]>;
   body?: unknown;
   accessToken?: string;
   signal?: AbortSignal;
-};
+} & Omit<RequestInit, "body" | "headers" | "method" | "signal"> & {
+    headers?: HeadersInit;
+  };
 
 export const request = async <T>(
   path: string,
-  signal?: AbortSignal,
-  init?: RequestInit,
+  options: RequestOptions = {},
 ) => {
-  const headers = new Headers(init?.headers);
+  const {
+    method = "GET",
+    body,
+    accessToken,
+    signal,
+    headers: inputHeaders,
+    ...init
+  } = options;
+  const headers = new Headers(inputHeaders);
 
   if (!headers.has("Accept")) {
     headers.set("Accept", "application/json");
@@ -65,11 +74,37 @@ export const request = async <T>(
     headers.set("Accept-Language", "ko");
   }
 
+  if (accessToken && !headers.has("Authorization")) {
+    headers.set("Authorization", `Bearer ${accessToken}`);
+  }
+
+  if (body != null && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  const normalizedHeaders = Object.fromEntries(
+    Array.from(headers.entries(), ([key, value]) => {
+      const normalizedKey =
+        key === "accept"
+          ? "Accept"
+          : key === "accept-language"
+            ? "Accept-Language"
+            : key === "content-type"
+              ? "Content-Type"
+              : key === "authorization"
+                ? "Authorization"
+                : key;
+
+      return [normalizedKey, value];
+    }),
+  );
+
   const response = await fetch(buildApiUrl(path), {
-    method: "GET",
+    method,
     ...init,
-    headers,
+    headers: normalizedHeaders,
     signal,
+    body: body == null ? undefined : JSON.stringify(body),
   });
 
   if (!response.ok) {
@@ -99,6 +134,13 @@ export const request = async <T>(
   return payload.result as T;
 };
 
-export const requestJson = <T>(path: string, signal?: AbortSignal) => {
-  return request<T>(path, { signal });
+export const requestJson = <T>(
+  path: string,
+  signal?: AbortSignal,
+  options: Omit<RequestOptions, "signal"> = {},
+) => {
+  return request<T>(path, {
+    ...options,
+    signal,
+  });
 };
