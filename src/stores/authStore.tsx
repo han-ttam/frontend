@@ -1,5 +1,6 @@
 import {
   logoutSession,
+  withdrawAccount,
   type AuthSessionDto,
   type AuthUserDto,
 } from "@/lib/api/auth";
@@ -31,6 +32,7 @@ type AuthContextValue = AuthState & {
   isAuthenticated: boolean;
   signIn: (session: AuthSessionDto) => Promise<void>;
   signOut: () => Promise<void>;
+  withdraw: () => Promise<void>;
   skipLogin: () => Promise<void>;
 };
 
@@ -105,6 +107,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const withdraw = async () => {
+    const { accessToken } = state;
+
+    if (!accessToken) {
+      throw new Error("로그인 상태가 아니에요. 다시 로그인한 뒤 시도해 주세요.");
+    }
+
+    // 로그아웃과 달리 서버 처리 성공을 확인한 뒤에만 로컬 세션을 정리한다.
+    // 실패하면 예외를 그대로 올려 세션을 유지하고 재시도하게 한다(멱등이라 안전).
+    await withdrawAccount(accessToken);
+
+    await clearTokens();
+    setState({ isHydrated: true, hasSkippedLogin: false });
+  };
+
   const skipLogin = async () => {
     await saveLoginSkipped();
     setState((current) => ({ ...current, hasSkippedLogin: true }));
@@ -117,6 +134,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         isAuthenticated: state.accessToken !== undefined,
         signIn,
         signOut,
+        withdraw,
         skipLogin,
       }}
     >

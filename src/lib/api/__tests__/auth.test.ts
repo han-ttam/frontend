@@ -1,5 +1,10 @@
 import { ApiError } from "../client";
-import { loginWithOAuth, logoutSession, refreshTokens } from "../auth";
+import {
+  loginWithOAuth,
+  logoutSession,
+  refreshTokens,
+  withdrawAccount,
+} from "../auth";
 
 const jsonResponse = (status: number, body: unknown) => {
   return {
@@ -104,5 +109,37 @@ describe("auth API", () => {
 
     await expect(logoutSession("refresh-1")).resolves.toBeUndefined();
     expect(response.json).not.toHaveBeenCalled();
+  });
+
+  it("withdraws the account with a DELETE authorized by the access token", async () => {
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValueOnce(jsonResponse(200, { result: { withdrawn: true } }));
+    global.fetch = fetchMock;
+
+    await expect(withdrawAccount("access-1")).resolves.toEqual({
+      withdrawn: true,
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.handdam.test/api/me",
+      expect.objectContaining({
+        method: "DELETE",
+        headers: expect.objectContaining({
+          Authorization: "Bearer access-1",
+        }),
+      }),
+    );
+  });
+
+  it("surfaces the server error when withdrawal is rejected", async () => {
+    global.fetch = jest.fn().mockResolvedValueOnce(
+      jsonResponse(401, {
+        error: { code: "UNAUTHORIZED", message: "Access token expired" },
+      }),
+    );
+
+    await expect(withdrawAccount("expired")).rejects.toThrow(
+      new ApiError("Access token expired", "UNAUTHORIZED", 401),
+    );
   });
 });

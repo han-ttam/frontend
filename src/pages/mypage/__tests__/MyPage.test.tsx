@@ -15,7 +15,11 @@ jest.mock("expo-router", () => ({
 // 설정 모달이 useAuth 를 쓰므로, AuthProvider/SecureStore 없이도 렌더되도록
 // 인증 스토어를 가짜로 대체한다.
 jest.mock("@/stores/authStore", () => ({
-  useAuth: () => ({ isAuthenticated: true, signOut: jest.fn() }),
+  useAuth: () => ({
+    isAuthenticated: true,
+    signOut: jest.fn(),
+    withdraw: jest.fn(),
+  }),
 }));
 
 // 설정 모달은 useSafeAreaInsets 를 쓰는데, 테스트엔 SafeAreaProvider 가 없어서

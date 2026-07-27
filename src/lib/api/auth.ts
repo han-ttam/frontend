@@ -79,6 +79,17 @@ export const logoutSession = (refreshToken: string, signal?: AbortSignal) => {
   });
 };
 
+// 소프트 탈퇴(status=WITHDRAWN). 서버가 활동 데이터와 refreshToken 을 지워
+// 강제 로그아웃시키며, 멱등이라 이미 탈퇴한 계정에 다시 호출해도 안전하다.
+// 남은 access token 은 최대 15분 유효하므로, 성공 후 로컬 토큰도 지워야 한다.
+export const withdrawAccount = (accessToken: string, signal?: AbortSignal) => {
+  return request<{ withdrawn: boolean }>("/api/me", {
+    method: "DELETE",
+    accessToken,
+    signal,
+  });
+};
+
 export const fetchAuthMe = (accessToken: string, signal?: AbortSignal) => {
   return request<AuthUserDto>("/api/auth/me", { accessToken, signal });
 };
