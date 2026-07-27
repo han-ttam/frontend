@@ -10,3 +10,5 @@ runs:
         cache: npm
     - run: npm ci
       shell: bash
+    - run: npx expo customize tsconfig.json
+      shell: bash

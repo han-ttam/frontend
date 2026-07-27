@@ -8,6 +8,7 @@ export type RegionSpot = {
   address: string;
   imageUrl: string | null;
   status: RegionSpotStatus;
+  isFavorite?: boolean;
 };
 
 export type RegionDetail = {
@@ -21,6 +22,11 @@ export type RegionDetail = {
   spots: RegionSpot[];
 };
 
+export type FavoriteRegionSpot = RegionSpot & {
+  regionId: RegionId;
+  regionTitle: string;
+};
+
 const gangwonSpots: RegionSpot[] = [
   {
     id: "seoraksan",
@@ -29,6 +35,7 @@ const gangwonSpots: RegionSpot[] = [
     imageUrl:
       "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?q=80&w=600&auto=format&fit=crop",
     status: "completed",
+    isFavorite: true,
   },
   {
     id: "auraji",
@@ -45,6 +52,7 @@ const gangwonSpots: RegionSpot[] = [
     imageUrl:
       "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=600&auto=format&fit=crop",
     status: "completed",
+    isFavorite: true,
   },
   {
     id: "railbike",
@@ -61,6 +69,7 @@ const gangwonSpots: RegionSpot[] = [
     imageUrl:
       "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?q=80&w=600&auto=format&fit=crop",
     status: "planned",
+    isFavorite: true,
   },
   {
     id: "hajodae",
@@ -178,3 +187,21 @@ export const regionDetails: Record<RegionId, RegionDetail> = {
     spots: gangwonSpots,
   },
 };
+
+const favoriteSpotMap = new Map<string, FavoriteRegionSpot>();
+
+Object.values(regionDetails).forEach((detail) => {
+  detail.spots
+    .filter((spot) => spot.isFavorite)
+    .forEach((spot) => {
+      if (!favoriteSpotMap.has(spot.id)) {
+        favoriteSpotMap.set(spot.id, {
+          ...spot,
+          regionId: detail.id,
+          regionTitle: detail.title,
+        });
+      }
+    });
+});
+
+export const favoriteRegionSpots = Array.from(favoriteSpotMap.values());

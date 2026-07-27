@@ -1,19 +1,21 @@
 import { AppText } from "@/components/AppText";
 import { ImagePlaceholder } from "@/components/ui/ImagePlaceholder";
 import { colors } from "@/constants/colors";
+import { favoriteRegionSpots } from "@/constants/regionDetails";
 import { recommendations } from "@/constants/recommendations";
 import { type RegionId } from "@/constants/regions";
 import { InteractiveKoreaMap } from "@/features/map/components/InteractiveKoreaMap";
 import { TravelProofConsentModal } from "@/features/map/components/TravelProofConsentModal";
 import { useMapData } from "@/features/map/useMapData";
 import { Entypo } from "@expo/vector-icons";
-import { Link, router } from "expo-router";
+import { type Href, Link, router } from "expo-router";
 import { useMemo, useState } from "react";
 import { Image, Pressable, ScrollView, View } from "react-native";
 
 const MapPage = () => {
   const [selectedRegionId, setSelectedRegionId] = useState<RegionId>();
   const [isConsentVisible, setIsConsentVisible] = useState(false);
+  const favoriteCount = favoriteRegionSpots.length;
   const { data } = useMapData();
   const progress = data?.summary.progress;
   const progressPercent = progress?.percent ?? 0;
@@ -98,11 +100,29 @@ const MapPage = () => {
               </View>
             </View>
 
-            <View className="items-center justify-center gap-1 rounded-[18px] border border-muted bg-background p-3.5">
-              <AppText color="muted" size={12}>
-                총 여행 점수 {score}점
-              </AppText>
-              <AppText variant="subtitle">전국 {nationalRank}위</AppText>
+            <View className="items-end gap-2">
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="찜한 여행지 보기"
+                className="flex-row items-center gap-1 rounded-full border border-primary/20 bg-primary/10 px-3 py-2"
+                onPress={() => router.push("/map/favorites" as Href)}
+              >
+                <Entypo name="heart" size={16} color={colors.primary} />
+                <AppText
+                  color="primary"
+                  size={13}
+                  style={{ fontWeight: "800" }}
+                >
+                  찜 {favoriteCount}
+                </AppText>
+              </Pressable>
+
+              <View className="items-center justify-center gap-1 rounded-[18px] border border-muted bg-background p-3.5">
+                <AppText color="muted" size={12}>
+                  총 여행 점수 {score}점
+                </AppText>
+                <AppText variant="subtitle">전국 {nationalRank}위</AppText>
+              </View>
             </View>
           </View>
 
@@ -135,7 +155,7 @@ const MapPage = () => {
                 <Entypo name="location-pin" size={24} color={colors.primary} />
                 <AppText variant="subtitle">오늘의 추천 여행지</AppText>
               </View>
-              <Link href="/map/list" asChild>
+              {/* <Link href="/map/list" asChild>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="추천 여행지 더보기"
@@ -144,7 +164,7 @@ const MapPage = () => {
                   <AppText color="muted">더보기</AppText>
                   <Entypo name="chevron-right" size={20} color={colors.muted} />
                 </Pressable>
-              </Link>
+              </Link> */}
             </View>
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
