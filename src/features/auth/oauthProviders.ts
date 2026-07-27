@@ -40,10 +40,38 @@ const getClientId = (provider: OAuthProvider) => {
     : getGoogleClientId();
 };
 
+// 기본 redirect — 카카오·기타 provider 및 화면 표시용. 앱 스킴(handdam://oauth).
 export const oauthRedirectUri = AuthSession.makeRedirectUri({
   scheme: "handdam",
   path: "oauth",
 });
+
+// 구글 iOS 클라이언트는 reversed client id 스킴을 redirect 로 요구한다.
+// (642061...apps.googleusercontent.com → com.googleusercontent.apps.642061...)
+const googleIosRedirectUri = () => {
+  const clientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+
+  if (!clientId) {
+    return oauthRedirectUri;
+  }
+
+  const reversed = `com.googleusercontent.apps.${clientId.replace(
+    /\.apps\.googleusercontent\.com$/,
+    "",
+  )}`;
+
+  return AuthSession.makeRedirectUri({ native: `${reversed}:/oauth2redirect` });
+};
+
+// provider·플랫폼에 맞는 redirect 를 돌려준다.
+// 구글 iOS 만 reversed client id 를 쓰고, 그 외에는 앱 스킴을 쓴다.
+export const getRedirectUri = (provider: OAuthProvider) => {
+  if (provider === "google" && Platform.OS === "ios") {
+    return googleIosRedirectUri();
+  }
+
+  return oauthRedirectUri;
+};
 
 export const getOAuthConfig = (
   provider: OAuthProvider,
