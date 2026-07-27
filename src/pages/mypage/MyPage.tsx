@@ -3,6 +3,7 @@ import { colors } from "@/constants/colors";
 import { CollectionProgressTab } from "@/features/mypage/components/CollectionProgressTab";
 import { ProfileCard } from "@/features/mypage/components/ProfileCard";
 import { RankingTab } from "@/features/mypage/components/RankingTab";
+import { SettingsModal } from "@/features/mypage/components/SettingsModal";
 import {
   mypageCollections,
   mypageProfile,
@@ -28,6 +29,7 @@ type MypageTab = (typeof TABS)[number]["id"];
 const MyPage = () => {
   const [tab, setTab] = useState<MypageTab>("collections");
   const [period, setPeriod] = useState<RankingPeriod>("CUMULATIVE");
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const { maxContentWidth, isCompact } = useMypageLayout();
 
   const profile = mypageProfile;
@@ -67,6 +69,7 @@ const MyPage = () => {
             accessibilityRole="button"
             accessibilityLabel="설정 열기"
             className="h-11 w-11 items-center justify-center rounded-full border border-foreground/15 bg-surface"
+            onPress={() => setIsSettingsOpen(true)}
           >
             <Feather name="settings" size={19} color={colors.foreground} />
           </Pressable>
@@ -120,6 +123,11 @@ const MyPage = () => {
           />
         )}
       </View>
+
+      <SettingsModal
+        visible={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
     </ScrollView>
   );
 };
