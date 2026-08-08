@@ -78,8 +78,9 @@ const SettingsRow = ({
 
 export const SettingsModal = ({ visible, onClose }: SettingsModalProps) => {
   const insets = useSafeAreaInsets();
-  const { isAuthenticated, signOut } = useAuth();
+  const { isAuthenticated, signOut, withdraw } = useAuth();
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
 
   const handleSignOut = () => {
     Alert.alert("로그아웃", "정말 로그아웃 할까요?", [
@@ -102,6 +103,36 @@ export const SettingsModal = ({ visible, onClose }: SettingsModalProps) => {
   const handleSignIn = () => {
     onClose();
     router.push("/login");
+  };
+
+  const handleWithdraw = () => {
+    Alert.alert(
+      "회원 탈퇴",
+      "탈퇴하면 방문·찜·평점·뱃지 등 활동 기록이 모두 삭제되고 되돌릴 수 없어요. 정말 탈퇴할까요?",
+      [
+        { text: "취소", style: "cancel" },
+        {
+          text: "탈퇴하기",
+          style: "destructive",
+          onPress: async () => {
+            setIsWithdrawing(true);
+            try {
+              // withdraw 는 서버 탈퇴가 성공했을 때만 로컬 토큰을 지운다.
+              await withdraw();
+              onClose();
+              router.replace("/login");
+            } catch {
+              // 멱등이라 재시도가 안전하므로, 세션을 유지한 채 다시 시도하게 한다.
+              setIsWithdrawing(false);
+              Alert.alert(
+                "탈퇴 실패",
+                "잠시 후 다시 시도해 주세요. 문제가 계속되면 고객센터로 문의해 주세요.",
+              );
+            }
+          },
+        },
+      ],
+    );
   };
 
   return (
@@ -154,12 +185,15 @@ export const SettingsModal = ({ visible, onClose }: SettingsModalProps) => {
               onPress={handleSignIn}
             />
           )}
-          <SettingsRow
-            icon="user-x"
-            label="회원 탈퇴"
-            destructive
-            comingSoon
-          />
+          {isAuthenticated ? (
+            <SettingsRow
+              icon="user-x"
+              label="회원 탈퇴"
+              destructive
+              busy={isWithdrawing}
+              onPress={handleWithdraw}
+            />
+          ) : null}
         </Pressable>
       </Pressable>
     </Modal>
