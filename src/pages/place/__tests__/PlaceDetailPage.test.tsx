@@ -44,6 +44,19 @@ jest.mock("@/features/place/useBookmark", () => ({
   useBookmark: () => mockBookmark,
 }));
 
+// 아이폰 노치 크기를 흉내낸다. 히어로는 상태바 아래까지 꽉 차되,
+// 그 위에 얹힌 버튼들은 안전영역을 침범하면 안 된다.
+const SAFE_AREA_TOP = 59;
+
+jest.mock("react-native-safe-area-context", () => ({
+  useSafeAreaInsets: () => ({
+    top: SAFE_AREA_TOP,
+    bottom: 34,
+    left: 0,
+    right: 0,
+  }),
+}));
+
 const emptyPlace: PlaceDetailData = {
   place: {
     id: "place-1",
@@ -189,6 +202,15 @@ describe("PlaceDetailPage", () => {
     await fireEvent.press(screen.getByLabelText("다시 시도"));
 
     expect(mockReload).toHaveBeenCalled();
+  });
+
+  it("히어로 버튼들을 노치 아래로 내린다", async () => {
+    await render(<PlaceDetailPage />);
+
+    expect(screen.getByLabelText("뒤로 가기")).toHaveStyle({
+      top: SAFE_AREA_TOP + 16,
+    });
+    expect(screen.getByText("미방문")).toBeTruthy();
   });
 
   it("게스트에게는 찜 버튼을 보여주지 않는다", async () => {
