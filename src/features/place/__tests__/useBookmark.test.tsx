@@ -2,6 +2,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 import type { PropsWithChildren } from "react";
 
+import { ApiError } from "@/lib/api/client";
+
 import { useBookmark } from "../useBookmark";
 
 const mockFetchBookmarks = jest.fn();
@@ -221,6 +223,30 @@ describe("useBookmark", () => {
 
     await waitFor(() => {
       expect(result.current.toggleError).toBeTruthy();
+    });
+    expect(result.current.isBookmarked).toBe(false);
+    expect(result.current.isSessionExpired).toBe(false);
+  });
+
+  it("토큰이 만료돼서 실패하면 세션 만료로 구분한다", async () => {
+    mockAddBookmark.mockRejectedValue(
+      new ApiError("Invalid or expired token", "UNAUTHORIZED", 401),
+    );
+
+    const { result } = await renderHook(() => useBookmark("place-1"), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current.isDisabled).toBe(false);
+    });
+
+    await act(async () => {
+      result.current.toggle();
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSessionExpired).toBe(true);
     });
     expect(result.current.isBookmarked).toBe(false);
   });

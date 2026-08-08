@@ -36,6 +36,7 @@ let mockBookmark = {
   isAvailable: true,
   isBookmarked: false,
   isDisabled: false,
+  isSessionExpired: false,
   toggleError: null as Error | null,
   toggle: mockToggle,
 };
@@ -126,6 +127,7 @@ describe("PlaceDetailPage", () => {
       isAvailable: true,
       isBookmarked: false,
       isDisabled: false,
+      isSessionExpired: false,
       toggleError: null,
       toggle: mockToggle,
     };
@@ -247,5 +249,22 @@ describe("PlaceDetailPage", () => {
     expect(
       screen.getByText("찜을 저장하지 못했어요. 다시 시도해주세요."),
     ).toBeTruthy();
+  });
+
+  it("세션이 만료돼서 실패하면 다시 시도가 아니라 재로그인을 안내한다", async () => {
+    mockBookmark = {
+      ...mockBookmark,
+      isSessionExpired: true,
+      toggleError: new Error("Invalid or expired token"),
+    };
+
+    await render(<PlaceDetailPage />);
+
+    expect(
+      screen.getByText("로그인이 만료됐어요. 다시 로그인해주세요."),
+    ).toBeTruthy();
+    expect(
+      screen.queryByText("찜을 저장하지 못했어요. 다시 시도해주세요."),
+    ).toBeNull();
   });
 });

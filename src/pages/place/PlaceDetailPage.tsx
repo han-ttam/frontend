@@ -78,6 +78,7 @@ const PlaceDetailPage = () => {
     isDisabled: isBookmarkDisabled,
     toggle: toggleBookmark,
     toggleError: bookmarkError,
+    isSessionExpired: isBookmarkSessionExpired,
   } = useBookmark(id);
 
   if (!id) {
@@ -154,7 +155,9 @@ const PlaceDetailPage = () => {
 
               {bookmarkError ? (
                 <AppText color="muted" size={13}>
-                  찜을 저장하지 못했어요. 다시 시도해주세요.
+                  {isBookmarkSessionExpired
+                    ? "로그인이 만료됐어요. 다시 로그인해주세요."
+                    : "찜을 저장하지 못했어요. 다시 시도해주세요."}
                 </AppText>
               ) : null}
 

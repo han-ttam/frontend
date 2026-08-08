@@ -3,6 +3,7 @@ import {
   fetchBookmarks,
   removeBookmark,
 } from "@/lib/api/bookmarks";
+import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/stores/authStore";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -107,5 +108,9 @@ export const useBookmark = (placeId: string | undefined) => {
     isDisabled: !enabled || listQuery.isLoading || mutation.isPending,
     toggle: () => mutation.mutate(),
     toggleError: mutation.error ?? null,
+    // 토큰이 만료되면 서버가 401 을 준다. 앱에 토큰 갱신이 붙어 있지 않아
+    // 재로그인 외엔 복구가 안 되므로, "다시 시도"와 다르게 안내해야 한다.
+    isSessionExpired:
+      mutation.error instanceof ApiError && mutation.error.status === 401,
   };
 };
