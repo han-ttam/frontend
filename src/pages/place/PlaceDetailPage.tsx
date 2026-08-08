@@ -1,11 +1,13 @@
 import { AppText } from "@/components/AppText";
 import { colors } from "@/constants/colors";
+import { BookmarkButton } from "@/features/place/components/BookmarkButton";
 import { CertificationGallery } from "@/features/place/components/CertificationGallery";
 import { CompositionGuide } from "@/features/place/components/CompositionGuide";
 import { PlaceHero } from "@/features/place/components/PlaceHero";
 import { PlaceMissionCard } from "@/features/place/components/PlaceMissionCard";
 import { PlaceScoreCard } from "@/features/place/components/PlaceScoreCard";
 import { formatTag } from "@/features/place/format";
+import { useBookmark } from "@/features/place/useBookmark";
 import { usePlaceDetailData } from "@/features/place/usePlaceDetailData";
 import { usePlaceDetailLayout } from "@/features/place/usePlaceDetailLayout";
 import { Entypo } from "@expo/vector-icons";
@@ -69,6 +71,15 @@ const PlaceDetailPage = () => {
     certificationGap,
   } = usePlaceDetailLayout();
 
+  // 훅 호출은 조기 반환보다 위에 있어야 렌더마다 순서가 같다.
+  const {
+    isAvailable: canBookmark,
+    isBookmarked,
+    isDisabled: isBookmarkDisabled,
+    toggle: toggleBookmark,
+    toggleError: bookmarkError,
+  } = useBookmark(id);
+
   if (!id) {
     return (
       <MessageScreen
@@ -120,15 +131,32 @@ const PlaceDetailPage = () => {
             style={{ paddingHorizontal: horizontalPadding }}
           >
             <View className="gap-3">
-              <AppText
-                style={{
-                  fontSize: titleSize,
-                  lineHeight: titleSize + 8,
-                  fontWeight: "800",
-                }}
-              >
-                {place.name}
-              </AppText>
+              <View className="flex-row items-start gap-3">
+                <AppText
+                  style={{
+                    flex: 1,
+                    fontSize: titleSize,
+                    lineHeight: titleSize + 8,
+                    fontWeight: "800",
+                  }}
+                >
+                  {place.name}
+                </AppText>
+
+                {canBookmark ? (
+                  <BookmarkButton
+                    isBookmarked={isBookmarked}
+                    isDisabled={isBookmarkDisabled}
+                    onPress={toggleBookmark}
+                  />
+                ) : null}
+              </View>
+
+              {bookmarkError ? (
+                <AppText color="muted" size={13}>
+                  찜을 저장하지 못했어요. 다시 시도해주세요.
+                </AppText>
+              ) : null}
 
               <View className="flex-row items-center gap-1.5">
                 <Entypo name="location-pin" size={18} color={colors.primary} />
