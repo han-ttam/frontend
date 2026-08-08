@@ -34,7 +34,7 @@ const fetchBookmarkedPlaceIds = async (
       signal,
     );
 
-    placeIds.push(...result.items.map((item) => item.placeId));
+    placeIds.push(...result.items.map((item) => item.id));
 
     if (!result.nextCursor) {
       break;

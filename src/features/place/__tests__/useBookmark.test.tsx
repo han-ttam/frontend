@@ -23,8 +23,17 @@ jest.mock("@/stores/authStore", () => ({
   useAuth: () => mockAuth,
 }));
 
+// 서버는 장소 식별자를 placeId 가 아니라 id 로 내려준다 (실기기에서 확인).
+// 실제 응답: { id, name, regionCode, imageUrl, visitStatus, bookmarkedAt }
 const page = (placeIds: string[], nextCursor: string | null = null) => ({
-  items: placeIds.map((placeId) => ({ placeId })),
+  items: placeIds.map((id) => ({
+    id,
+    name: `장소 ${id}`,
+    regionCode: "1_23",
+    imageUrl: null,
+    visitStatus: "PLANNED" as const,
+    bookmarkedAt: "2026-08-08T14:49:01.074Z",
+  })),
   nextCursor,
 });
 

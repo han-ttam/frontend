@@ -3,13 +3,21 @@ import { ApiError, request, requestJson } from "./client";
 export type BookmarkVisitStatusDto = "VISITED" | "NONE";
 
 export type BookmarkDto = {
-  placeId: string;
+  /**
+   * 장소 식별자. 서버는 placeId 가 아니라 `id` 로 내려준다 (실기기에서 확인).
+   * 실제 응답: { id, name, regionCode, imageUrl, visitStatus, bookmarkedAt }
+   */
+  id: string;
   name: string;
-  address: string;
   imageUrl: string | null;
+  bookmarkedAt?: string;
   visitStatus?: BookmarkVisitStatusDto;
   regionCode?: string | null;
   regionName?: string | null;
+  /** @deprecated 서버가 내려주지 않는다. 기존 호출부 호환용으로만 남겨둔다. */
+  placeId?: string;
+  /** @deprecated 서버가 내려주지 않는다. 기존 호출부 호환용으로만 남겨둔다. */
+  address?: string;
 };
 
 type BookmarkListResultDto =
