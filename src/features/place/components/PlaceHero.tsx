@@ -4,6 +4,7 @@ import { colors } from "@/constants/colors";
 import type { PlaceVisitStatus } from "@/lib/api/placeDetail";
 import { Entypo } from "@expo/vector-icons";
 import { Image, Pressable, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type PlaceHeroProps = {
   imageUrl: string | null;
@@ -19,6 +20,11 @@ export const PlaceHero = ({
   onBack,
 }: PlaceHeroProps) => {
   const isVisited = visitStatus === "VISITED";
+
+  // 히어로는 화면 맨 위라 그 위에 얹은 버튼이 상태바·노치와 겹친다.
+  // 이미지는 그대로 꽉 채우고 버튼만 안전영역 아래로 내린다.
+  const insets = useSafeAreaInsets();
+  const controlsTop = insets.top + 16;
 
   return (
     <View style={{ height }}>
@@ -39,7 +45,7 @@ export const PlaceHero = ({
         accessibilityRole="button"
         accessibilityLabel="뒤로 가기"
         className="h-11 w-11 items-center justify-center rounded-full bg-background/70"
-        style={{ position: "absolute", top: 16, left: 16 }}
+        style={{ position: "absolute", top: controlsTop, left: 16 }}
         onPress={onBack}
       >
         <Entypo name="chevron-left" size={24} color={colors.foreground} />
@@ -47,7 +53,7 @@ export const PlaceHero = ({
 
       <View
         className="flex-row items-center gap-1.5 rounded-full bg-background/70 px-4 py-2.5"
-        style={{ position: "absolute", top: 16, right: 16 }}
+        style={{ position: "absolute", top: controlsTop, right: 16 }}
       >
         <Entypo
           name={isVisited ? "check" : "location-pin"}

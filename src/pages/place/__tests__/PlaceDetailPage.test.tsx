@@ -30,6 +30,34 @@ jest.mock("@/features/place/usePlaceDetailData", () => ({
   usePlaceDetailData: () => ({ ...mockState, reload: mockReload }),
 }));
 
+const mockToggle = jest.fn();
+
+let mockBookmark = {
+  isAvailable: true,
+  isBookmarked: false,
+  isDisabled: false,
+  isSessionExpired: false,
+  toggleError: null as Error | null,
+  toggle: mockToggle,
+};
+
+jest.mock("@/features/place/useBookmark", () => ({
+  useBookmark: () => mockBookmark,
+}));
+
+// 아이폰 노치 크기를 흉내낸다. 히어로는 상태바 아래까지 꽉 차되,
+// 그 위에 얹힌 버튼들은 안전영역을 침범하면 안 된다.
+const SAFE_AREA_TOP = 59;
+
+jest.mock("react-native-safe-area-context", () => ({
+  useSafeAreaInsets: () => ({
+    top: SAFE_AREA_TOP,
+    bottom: 34,
+    left: 0,
+    right: 0,
+  }),
+}));
+
 const emptyPlace: PlaceDetailData = {
   place: {
     id: "place-1",
@@ -94,6 +122,15 @@ describe("PlaceDetailPage", () => {
     mockReload.mockClear();
     mockParams = { id: "place-1" };
     mockState = { data: emptyPlace, error: null, isLoading: false };
+    mockToggle.mockClear();
+    mockBookmark = {
+      isAvailable: true,
+      isBookmarked: false,
+      isDisabled: false,
+      isSessionExpired: false,
+      toggleError: null,
+      toggle: mockToggle,
+    };
   });
 
   it("shows the place name, address and score from the API", async () => {
@@ -167,5 +204,67 @@ describe("PlaceDetailPage", () => {
     await fireEvent.press(screen.getByLabelText("다시 시도"));
 
     expect(mockReload).toHaveBeenCalled();
+  });
+
+  it("히어로 버튼들을 노치 아래로 내린다", async () => {
+    await render(<PlaceDetailPage />);
+
+    expect(screen.getByLabelText("뒤로 가기")).toHaveStyle({
+      top: SAFE_AREA_TOP + 16,
+    });
+    expect(screen.getByText("미방문")).toBeTruthy();
+  });
+
+  it("게스트에게는 찜 버튼을 보여주지 않는다", async () => {
+    mockBookmark = { ...mockBookmark, isAvailable: false };
+
+    await render(<PlaceDetailPage />);
+
+    expect(screen.queryByLabelText("찜하기")).toBeNull();
+    expect(screen.queryByLabelText("찜 해제")).toBeNull();
+  });
+
+  it("로그인 사용자에게 찜 버튼을 보여주고 누르면 토글한다", async () => {
+    await render(<PlaceDetailPage />);
+
+    await fireEvent.press(screen.getByLabelText("찜하기"));
+
+    expect(mockToggle).toHaveBeenCalled();
+  });
+
+  it("이미 찜한 장소면 해제 라벨을 보여준다", async () => {
+    mockBookmark = { ...mockBookmark, isBookmarked: true };
+
+    await render(<PlaceDetailPage />);
+
+    expect(screen.getByLabelText("찜 해제")).toBeTruthy();
+    expect(screen.queryByLabelText("찜하기")).toBeNull();
+  });
+
+  it("찜 저장이 실패하면 안내 문구를 보여준다", async () => {
+    mockBookmark = { ...mockBookmark, toggleError: new Error("HTTP 500") };
+
+    await render(<PlaceDetailPage />);
+
+    expect(
+      screen.getByText("찜을 저장하지 못했어요. 다시 시도해주세요."),
+    ).toBeTruthy();
+  });
+
+  it("세션이 만료돼서 실패하면 다시 시도가 아니라 재로그인을 안내한다", async () => {
+    mockBookmark = {
+      ...mockBookmark,
+      isSessionExpired: true,
+      toggleError: new Error("Invalid or expired token"),
+    };
+
+    await render(<PlaceDetailPage />);
+
+    expect(
+      screen.getByText("로그인이 만료됐어요. 다시 로그인해주세요."),
+    ).toBeTruthy();
+    expect(
+      screen.queryByText("찜을 저장하지 못했어요. 다시 시도해주세요."),
+    ).toBeNull();
   });
 });
