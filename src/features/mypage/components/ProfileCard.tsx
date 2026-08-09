@@ -2,7 +2,11 @@ import { AppText } from "@/components/AppText";
 import { colors } from "@/constants/colors";
 import { Avatar } from "@/features/mypage/components/Avatar";
 import { ProgressBar } from "@/features/mypage/components/ProgressBar";
-import { formatNumber, toProgress } from "@/features/mypage/format";
+import {
+  formatNumber,
+  formatRank,
+  toProgress,
+} from "@/features/mypage/format";
 import type { MypageProfile } from "@/features/mypage/types";
 import { useMypageLayout } from "@/features/mypage/useMypageLayout";
 import { Entypo, Feather } from "@expo/vector-icons";
@@ -166,8 +170,8 @@ export const ProfileCard = ({
         />
         <StatColumn
           label="전국 랭킹"
-          value={formatNumber(profile.nationalRank)}
-          unit="위"
+          value={formatRank(profile.nationalRank)}
+          unit={profile.nationalRank == null ? undefined : "위"}
           caption={`/ ${formatNumber(profile.totalUsers)}명`}
           showInfo
           divided
