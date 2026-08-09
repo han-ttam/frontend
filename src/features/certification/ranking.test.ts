@@ -6,8 +6,6 @@ function place(overrides: Partial<NearbyPlace>): NearbyPlace {
     id: "p",
     name: "테스트 장소",
     rarityWeight: 1,
-    lat: 0,
-    lng: 0,
     distanceMeters: 0,
     ...overrides,
   };

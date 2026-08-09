@@ -2,6 +2,12 @@ import { getDistance } from "geolib";
 
 import type { NearbyPlace } from "./types";
 
+/**
+ * 현재 호출자가 없다 — 백엔드가 모든 장소의 rarityWeight 를 1로 시딩해 둬서, 이 공식이 만드는 순서가
+ * 서버가 이미 주는 거리순과 똑같기 때문이다(useNearbyPlaces 가 호출을 뺐다). 실제 값이 시딩되면
+ * 다시 붙일 수 있게 남겨 둔다. 테스트가 통과한다고 해서 지금 앱에서 쓰이는 코드는 아니다.
+ */
+
 interface Coordinates {
   lat: number;
   lng: number;

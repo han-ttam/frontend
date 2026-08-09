@@ -47,18 +47,11 @@ export interface CertifyResult {
   };
 }
 
-export interface ApiError {
-  code: string;
-  message: string;
-}
-
 /** 근처 장소 목록 카드에 필요한 최소 필드만 가진 독립 타입 — Place를 확장하지 않아 리스트/상세 API가 결합되지 않는다. */
 export interface NearbyPlace {
   id: string;
   name: string;
   rarityWeight: number;
-  lat: number;
-  lng: number;
   distanceMeters: number;
 }
 
