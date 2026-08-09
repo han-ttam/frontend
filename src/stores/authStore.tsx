@@ -1,9 +1,11 @@
 import {
   logoutSession,
+  refreshTokens,
   withdrawAccount,
   type AuthSessionDto,
   type AuthUserDto,
 } from "@/lib/api/auth";
+import { setAuthRefreshHandler } from "@/lib/api/client";
 import {
   clearLoginSkipped,
   clearTokens,
@@ -16,6 +18,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -71,6 +74,49 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     return () => {
       isActive = false;
+    };
+  }, []);
+
+  // 핸들러는 한 번만 등록하고, 최신 refreshToken 은 ref 로 읽는다.
+  // state 를 클로저로 잡으면 등록 시점의 낡은 토큰으로 갱신을 시도하게 된다.
+  const refreshTokenRef = useRef<string | undefined>(undefined);
+
+  useEffect(() => {
+    refreshTokenRef.current = state.refreshToken;
+  }, [state.refreshToken]);
+
+  useEffect(() => {
+    setAuthRefreshHandler(async () => {
+      const currentRefreshToken = refreshTokenRef.current;
+
+      if (!currentRefreshToken) {
+        return undefined;
+      }
+
+      try {
+        const tokens = await refreshTokens(currentRefreshToken);
+
+        await saveTokens(tokens);
+        setState((current) => ({
+          ...current,
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+        }));
+
+        return tokens.accessToken;
+      } catch {
+        // refreshToken 까지 죽었으면 되살릴 방법이 없다. 로컬 세션을 비워
+        // 화면이 로그인 유도 상태로 떨어지게 한다.
+        await clearTokens();
+        refreshTokenRef.current = undefined;
+        setState({ isHydrated: true, hasSkippedLogin: false });
+
+        return undefined;
+      }
+    });
+
+    return () => {
+      setAuthRefreshHandler(undefined);
     };
   }, []);
 
