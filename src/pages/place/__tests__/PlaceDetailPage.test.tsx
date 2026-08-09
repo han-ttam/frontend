@@ -1,0 +1,270 @@
+import type { PlaceDetailData } from "@/features/place/usePlaceDetailData";
+import { fireEvent, render, screen } from "@testing-library/react-native";
+
+import PlaceDetailPage from "../PlaceDetailPage";
+
+const mockPush = jest.fn();
+const mockBack = jest.fn();
+const mockReload = jest.fn();
+
+let mockParams: { id?: string } = { id: "place-1" };
+let mockState: {
+  data: PlaceDetailData | undefined;
+  error: Error | null;
+  isLoading: boolean;
+} = {
+  data: undefined,
+  error: null,
+  isLoading: false,
+};
+
+jest.mock("expo-router", () => ({
+  router: {
+    push: (...args: unknown[]) => mockPush(...args),
+    back: () => mockBack(),
+  },
+  useLocalSearchParams: () => mockParams,
+}));
+
+jest.mock("@/features/place/usePlaceDetailData", () => ({
+  usePlaceDetailData: () => ({ ...mockState, reload: mockReload }),
+}));
+
+const mockToggle = jest.fn();
+
+let mockBookmark = {
+  isAvailable: true,
+  isBookmarked: false,
+  isDisabled: false,
+  isSessionExpired: false,
+  toggleError: null as Error | null,
+  toggle: mockToggle,
+};
+
+jest.mock("@/features/place/useBookmark", () => ({
+  useBookmark: () => mockBookmark,
+}));
+
+// 아이폰 노치 크기를 흉내낸다. 히어로는 상태바 아래까지 꽉 차되,
+// 그 위에 얹힌 버튼들은 안전영역을 침범하면 안 된다.
+const SAFE_AREA_TOP = 59;
+
+jest.mock("react-native-safe-area-context", () => ({
+  useSafeAreaInsets: () => ({
+    top: SAFE_AREA_TOP,
+    bottom: 34,
+    left: 0,
+    right: 0,
+  }),
+}));
+
+const emptyPlace: PlaceDetailData = {
+  place: {
+    id: "place-1",
+    regionCode: "32_16",
+    name: "속초 영금정",
+    address: "강원도 속초시 영금정로 43",
+    description: null,
+    mission: null,
+    tags: [],
+    rarityWeight: 1,
+    imageUrl: null,
+    rating: null,
+    ratingCount: 0,
+    myRating: null,
+    visitStatus: "NONE",
+    lat: 38.2,
+    lng: 128.6,
+  },
+  scoring: {
+    action: "CERT_PHOTO",
+    basePoints: 15,
+    regionWeight: 1.5,
+    rarityWeight: 1,
+    eventMultiplier: 1,
+    estimatedPoints: 22.5,
+  },
+  compositions: [],
+  certifications: { items: [], nextCursor: null },
+};
+
+const filledPlace: PlaceDetailData = {
+  place: {
+    ...emptyPlace.place,
+    description: "동해 일출 명소예요.",
+    mission: "영금정 정자와 동해 바다가 함께 보이는 사진을 인증해주세요!",
+    tags: ["동해바다", "일출명소"],
+    imageUrl: "https://example.test/yeonggeumjeong.jpg",
+    rating: 4.8,
+    ratingCount: 21,
+    visitStatus: "VISITED",
+  },
+  scoring: emptyPlace.scoring,
+  compositions: [
+    {
+      seq: 1,
+      title: "정자 + 동해 바다",
+      description: "정자와 넓은 바다를 함께 담아보세요.",
+      exampleImageUrl: "https://example.test/composition-1.jpg",
+      source: "CURATED",
+    },
+  ],
+  certifications: {
+    items: [{ imageUrl: "https://example.test/cert-1.jpg", userHandle: "hyun" }],
+    nextCursor: null,
+  },
+};
+
+describe("PlaceDetailPage", () => {
+  beforeEach(() => {
+    mockPush.mockClear();
+    mockBack.mockClear();
+    mockReload.mockClear();
+    mockParams = { id: "place-1" };
+    mockState = { data: emptyPlace, error: null, isLoading: false };
+    mockToggle.mockClear();
+    mockBookmark = {
+      isAvailable: true,
+      isBookmarked: false,
+      isDisabled: false,
+      isSessionExpired: false,
+      toggleError: null,
+      toggle: mockToggle,
+    };
+  });
+
+  it("shows the place name, address and score from the API", async () => {
+    await render(<PlaceDetailPage />);
+
+    expect(screen.getByText("속초 영금정")).toBeTruthy();
+    expect(screen.getByText("강원도 속초시 영금정로 43")).toBeTruthy();
+    expect(screen.getByText("15")).toBeTruthy();
+    expect(screen.getByText("×1.5")).toBeTruthy();
+    expect(screen.getByText("지금 인증하면 예상 22.5점")).toBeTruthy();
+  });
+
+  it("falls back to the default mission and dashes the rating when the server has neither", async () => {
+    await render(<PlaceDetailPage />);
+
+    expect(
+      screen.getByText("이 장소의 대표적인 모습이 담긴 사진을 인증해주세요!"),
+    ).toBeTruthy();
+    expect(screen.getByText("–")).toBeTruthy();
+  });
+
+  it("explains the empty composition and certification sections", async () => {
+    await render(<PlaceDetailPage />);
+
+    expect(screen.getByText("아직 등록된 구도 가이드가 없어요.")).toBeTruthy();
+    expect(screen.getByText("아직 인증 사진이 없어요.")).toBeTruthy();
+  });
+
+  it("renders server content when the place is filled in", async () => {
+    mockState = { data: filledPlace, error: null, isLoading: false };
+
+    await render(<PlaceDetailPage />);
+
+    expect(screen.getByText("#동해바다")).toBeTruthy();
+    expect(screen.getByText("4.8")).toBeTruthy();
+    expect(screen.getByText("방문 완료")).toBeTruthy();
+    expect(screen.getByText("정자 + 동해 바다")).toBeTruthy();
+    expect(screen.getByLabelText("hyun님의 인증 사진")).toBeTruthy();
+    expect(
+      screen.getByText("영금정 정자와 동해 바다가 함께 보이는 사진을 인증해주세요!"),
+    ).toBeTruthy();
+    expect(screen.queryByText("아직 인증 사진이 없어요.")).toBeNull();
+  });
+
+  it("sends the traveler to the photo tab from the CTA", async () => {
+    await render(<PlaceDetailPage />);
+
+    await fireEvent.press(screen.getByLabelText("이 장소 인증하기"));
+
+    expect(mockPush).toHaveBeenCalledWith("/photo");
+  });
+
+  it("goes back from the hero button", async () => {
+    await render(<PlaceDetailPage />);
+
+    await fireEvent.press(screen.getByLabelText("뒤로 가기"));
+
+    expect(mockBack).toHaveBeenCalled();
+  });
+
+  it("offers a retry when the place fails to load", async () => {
+    mockState = {
+      data: undefined,
+      error: new Error("GET /api/places/place-1 failed with HTTP 500"),
+      isLoading: false,
+    };
+
+    await render(<PlaceDetailPage />);
+
+    expect(screen.getByText("여행지를 불러오지 못했어요")).toBeTruthy();
+    await fireEvent.press(screen.getByLabelText("다시 시도"));
+
+    expect(mockReload).toHaveBeenCalled();
+  });
+
+  it("히어로 버튼들을 노치 아래로 내린다", async () => {
+    await render(<PlaceDetailPage />);
+
+    expect(screen.getByLabelText("뒤로 가기")).toHaveStyle({
+      top: SAFE_AREA_TOP + 16,
+    });
+    expect(screen.getByText("미방문")).toBeTruthy();
+  });
+
+  it("게스트에게는 찜 버튼을 보여주지 않는다", async () => {
+    mockBookmark = { ...mockBookmark, isAvailable: false };
+
+    await render(<PlaceDetailPage />);
+
+    expect(screen.queryByLabelText("찜하기")).toBeNull();
+    expect(screen.queryByLabelText("찜 해제")).toBeNull();
+  });
+
+  it("로그인 사용자에게 찜 버튼을 보여주고 누르면 토글한다", async () => {
+    await render(<PlaceDetailPage />);
+
+    await fireEvent.press(screen.getByLabelText("찜하기"));
+
+    expect(mockToggle).toHaveBeenCalled();
+  });
+
+  it("이미 찜한 장소면 해제 라벨을 보여준다", async () => {
+    mockBookmark = { ...mockBookmark, isBookmarked: true };
+
+    await render(<PlaceDetailPage />);
+
+    expect(screen.getByLabelText("찜 해제")).toBeTruthy();
+    expect(screen.queryByLabelText("찜하기")).toBeNull();
+  });
+
+  it("찜 저장이 실패하면 안내 문구를 보여준다", async () => {
+    mockBookmark = { ...mockBookmark, toggleError: new Error("HTTP 500") };
+
+    await render(<PlaceDetailPage />);
+
+    expect(
+      screen.getByText("찜을 저장하지 못했어요. 다시 시도해주세요."),
+    ).toBeTruthy();
+  });
+
+  it("세션이 만료돼서 실패하면 다시 시도가 아니라 재로그인을 안내한다", async () => {
+    mockBookmark = {
+      ...mockBookmark,
+      isSessionExpired: true,
+      toggleError: new Error("Invalid or expired token"),
+    };
+
+    await render(<PlaceDetailPage />);
+
+    expect(
+      screen.getByText("로그인이 만료됐어요. 다시 로그인해주세요."),
+    ).toBeTruthy();
+    expect(
+      screen.queryByText("찜을 저장하지 못했어요. 다시 시도해주세요."),
+    ).toBeNull();
+  });
+});

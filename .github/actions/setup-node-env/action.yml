@@ -1,0 +1,14 @@
+name: Setup Node environment
+description: Set up Node from .nvmrc and install dependencies via npm ci
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version-file: ".nvmrc"
+        cache: npm
+    - run: npm ci
+      shell: bash
+    - run: npx expo customize tsconfig.json
+      shell: bash
