@@ -5,6 +5,10 @@ import { router } from "expo-router";
 import { useNearbyPlaces } from "@/features/certification/hooks/useNearbyPlaces";
 import type { NearbyPlace } from "@/features/certification/types";
 
+/**
+ * ✨ 희소 장소 배지 기준. 백엔드가 지금 모든 장소를 rarityWeight 1로 시딩해 둬서 이 조건은 아직
+ * 한 번도 참이 되지 않는다(api.ts 의 DEFAULT_RARITY_WEIGHT 참고). 고장난 게 아니라 대기 상태다.
+ */
 const RARE_THRESHOLD = 2;
 
 function formatDistance(distanceMeters: number): string {
@@ -99,10 +103,17 @@ export default function PhotoScreen() {
     );
   }
 
-  if (status === "error") {
+  if (status === "location-error" || status === "data-error") {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-black px-6">
-        <Text className="text-center text-base text-white">위치를 확인하지 못했어요</Text>
+        <Text className="text-center text-base text-white">
+          {status === "location-error" ? "위치를 확인하지 못했어요" : "근처 장소를 불러오지 못했어요"}
+        </Text>
+        <Text className="mt-2 text-center text-sm text-gray-400">
+          {status === "location-error"
+            ? "기기의 위치 서비스가 켜져 있는지 확인해주세요."
+            : "네트워크 상태를 확인하고 다시 시도해주세요."}
+        </Text>
         <Pressable
           onPress={retry}
           accessibilityRole="button"
