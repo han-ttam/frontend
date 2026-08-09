@@ -70,7 +70,16 @@
           "nativeAppKey": "5a525ec5dccf4760b6654fe73a528857"
         }
       ],
-      "expo-build-properties"
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "extraMavenRepos": [
+              "https://devrepo.kakao.com/nexus/content/groups/public/"
+            ]
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

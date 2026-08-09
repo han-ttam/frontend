@@ -3,8 +3,8 @@ import { ActivityIndicator, Image, Pressable, ScrollView, Text, TextInput, View 
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 
-import { getPlaceAndScore, getCompositions } from "@/features/certification";
-import { useAsyncData } from "@/features/certification/hooks/useAsyncData";
+import { getCompositions, toErrorMessage } from "@/features/certification";
+import { usePlaceAndScore } from "@/features/certification/hooks/usePlaceAndScore";
 import { useSubmitVisit } from "@/features/certification/hooks/useSubmitVisit";
 import { ScorePreviewCard } from "@/features/certification/components/ScorePreviewCard";
 import type { Visibility } from "@/features/certification/types";
@@ -13,13 +13,13 @@ const CAPTION_MAX_LENGTH = 100;
 
 export default function ReviewScreen() {
   const { placeId, photoUri } = useLocalSearchParams<{ placeId: string; photoUri: string }>();
-  const { data, loading, error, retry } = useAsyncData(() => getPlaceAndScore(placeId));
+  const { data, isLoading, error, reload } = usePlaceAndScore(placeId);
   const { submit, submitting, error: submitError } = useSubmitVisit();
 
   const [caption, setCaption] = useState("");
   const [visibility, setVisibility] = useState<Visibility>("PUBLIC");
 
-  if (loading) {
+  if (isLoading) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-black">
         <ActivityIndicator color="#2dd4bf" />
@@ -30,9 +30,9 @@ export default function ReviewScreen() {
   if (error || !data) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-black px-6">
-        <Text className="text-center text-base text-white">{error ?? "장소 정보를 불러오지 못했어요"}</Text>
+        <Text className="text-center text-base text-white">{toErrorMessage(error, "장소 정보를 불러오지 못했어요")}</Text>
         <Pressable
-          onPress={retry}
+          onPress={() => reload()}
           accessibilityRole="button"
           accessibilityLabel="다시 시도"
           className="mt-4 min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-emerald-500 px-6 py-3"

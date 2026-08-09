@@ -6,8 +6,8 @@ import { CameraView, useCameraPermissions, type CameraType, type FlashMode } fro
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 
-import { loadPlaceAndScore, getCompositions } from "@/features/certification";
-import { useAsyncData } from "@/features/certification/hooks/useAsyncData";
+import { getCompositions, toErrorMessage } from "@/features/certification";
+import { usePlaceAndScore } from "@/features/certification/hooks/usePlaceAndScore";
 
 const DEFAULT_MISSION = "이 장소의 사진을 찍어주세요";
 
@@ -77,7 +77,7 @@ function FrameGuides() {
 
 export default function CameraScreen() {
   const { placeId } = useLocalSearchParams<{ placeId: string }>();
-  const { data, loading, error, retry } = useAsyncData(() => loadPlaceAndScore(placeId));
+  const { data, isLoading, error, reload } = usePlaceAndScore(placeId);
   const [capturing, setCapturing] = useState(false);
   const [facing, setFacing] = useState<CameraType>("back");
   const [flash, setFlash] = useState<FlashMode>("off");
@@ -154,7 +154,7 @@ export default function CameraScreen() {
     setFlash((current) => (current === "off" ? "on" : "off"));
   }, []);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-black">
         <ActivityIndicator color="#2dd4bf" />
@@ -165,9 +165,9 @@ export default function CameraScreen() {
   if (error || !data) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-black px-6">
-        <Text className="text-center text-base text-white">{error ?? "장소 정보를 불러오지 못했어요"}</Text>
+        <Text className="text-center text-base text-white">{toErrorMessage(error, "장소 정보를 불러오지 못했어요")}</Text>
         <Pressable
-          onPress={retry}
+          onPress={() => reload()}
           accessibilityRole="button"
           accessibilityLabel="다시 시도"
           className="mt-4 min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-emerald-500 px-6 py-3"

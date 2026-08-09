@@ -3,8 +3,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 import Toast from "react-native-toast-message";
 
-import { getPlaceAndScore, getCertifyResult } from "@/features/certification";
-import { useAsyncData } from "@/features/certification/hooks/useAsyncData";
+import { getCertifyResult } from "@/features/certification";
+import { usePlaceAndScore } from "@/features/certification/hooks/usePlaceAndScore";
 import { ScorePreviewCard } from "@/features/certification/components/ScorePreviewCard";
 
 function showComingSoon() {
@@ -13,9 +13,9 @@ function showComingSoon() {
 
 export default function CompleteScreen() {
   const { placeId, photoUri } = useLocalSearchParams<{ placeId: string; photoUri?: string }>();
-  const { data, loading } = useAsyncData(() => getPlaceAndScore(placeId));
+  const { data, isLoading } = usePlaceAndScore(placeId);
 
-  if (loading || !data) {
+  if (isLoading || !data) {
     return <SafeAreaView className="flex-1 bg-black" />;
   }
 

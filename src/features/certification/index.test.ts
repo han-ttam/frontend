@@ -26,6 +26,7 @@ const mockGetScorePreview = jest.fn().mockResolvedValue(score);
 jest.mock("./api", () => ({
   getPlace: (...args: unknown[]) => mockGetPlace(...args),
   getScorePreview: (...args: unknown[]) => mockGetScorePreview(...args),
+  getNearbyPlaces: jest.fn(),
 }));
 
 function loadFacade(): typeof CertificationFacade {
@@ -39,30 +40,44 @@ describe("certification facade", () => {
     jest.resetModules();
   });
 
-  it("loadPlaceAndScore fetches both real endpoints and caches the result", async () => {
-    const { loadPlaceAndScore, getPlaceAndScore } = loadFacade();
+  it("fetchPlaceAndScore가 장소와 점수를 함께 돌려준다", async () => {
+    const { fetchPlaceAndScore } = loadFacade();
 
-    const result = await loadPlaceAndScore("p1");
+    const result = await fetchPlaceAndScore("p1");
 
     expect(result).toEqual({ place, score });
     expect(mockGetPlace).toHaveBeenCalledWith("p1");
     expect(mockGetScorePreview).toHaveBeenCalledWith("p1");
-
-    // cache hit: getPlaceAndScore must not call the API again
-    jest.clearAllMocks();
-    const cached = await getPlaceAndScore("p1");
-    expect(cached).toEqual({ place, score });
-    expect(mockGetPlace).not.toHaveBeenCalled();
-    expect(mockGetScorePreview).not.toHaveBeenCalled();
   });
 
-  it("getPlaceAndScore refetches on a cache miss (e.g. deep link straight into review)", async () => {
-    const { getPlaceAndScore } = loadFacade();
+  it("두 요청을 병렬로 보낸다", async () => {
+    const { fetchPlaceAndScore } = loadFacade();
 
-    const result = await getPlaceAndScore("never-cached-id");
+    let resolvePlace: (value: Place) => void = () => {};
+    mockGetPlace.mockImplementationOnce(
+      () =>
+        new Promise<Place>((resolve) => {
+          resolvePlace = resolve;
+        }),
+    );
 
-    expect(result).toEqual({ place, score });
-    expect(mockGetPlace).toHaveBeenCalledWith("never-cached-id");
-    expect(mockGetScorePreview).toHaveBeenCalledWith("never-cached-id");
+    const pending = fetchPlaceAndScore("p1");
+
+    // 장소 조회가 아직 안 끝났는데도 점수 조회는 이미 나가 있어야 병렬이다.
+    expect(mockGetScorePreview).toHaveBeenCalledWith("p1");
+
+    resolvePlace(place);
+    await expect(pending).resolves.toEqual({ place, score });
+  });
+
+  it("캐시를 직접 들고 있지 않다 — 호출할 때마다 새로 조회한다", async () => {
+    const { fetchPlaceAndScore } = loadFacade();
+
+    await fetchPlaceAndScore("p1");
+    await fetchPlaceAndScore("p1");
+
+    // 중복 호출을 막는 건 react-query 의 queryKey 지 이 계층이 아니다.
+    expect(mockGetPlace).toHaveBeenCalledTimes(2);
+    expect(mockGetScorePreview).toHaveBeenCalledTimes(2);
   });
 });
