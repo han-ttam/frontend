@@ -1,17 +1,17 @@
-import { resolveCollectionDetailMock } from "@/features/mypage/collectionDetailMock";
+import { fetchCollectionDetail } from "@/lib/api/collectionDetail";
 import { useQuery } from "@tanstack/react-query";
 
 /**
- * 모음 상세(명소 목록) 조회.
+ * 모음 상세(명소 목록) 조회 — GET /api/collections/{id}.
  *
- * 지금은 queryFn 이 목데이터를 돌려준다. 앱 키가 나오면
- * `fetchCollectionDetail(id, signal)` 로 이 한 줄만 바꾸면 연동이 끝난다.
- * (specs/002-mypage-collection-places/contracts/api-future.md)
+ * 공개 엔드포인트라 로그인 없이도 열린다. 다만 진입점인
+ * `/api/me/collections` 가 2026-08-09 현재 500 이라 실제로 여기 도달할
+ * 방법이 없다. 서버가 고쳐지면 응답 형태를 한 번 맞춰봐야 한다.
  */
 export const useCollectionDetailData = (id: string | undefined) => {
   const collectionQuery = useQuery({
     enabled: Boolean(id),
-    queryFn: () => resolveCollectionDetailMock(id!),
+    queryFn: ({ signal }) => fetchCollectionDetail(id!, signal),
     queryKey: ["mypage-collection-detail", id],
   });
 

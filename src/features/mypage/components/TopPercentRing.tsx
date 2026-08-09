@@ -5,7 +5,8 @@ import { View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 
 type TopPercentRingProps = {
-  topPercent: number;
+  /** 랭킹 데이터가 없으면 null 이다. 링을 비우고 대시를 보여준다. */
+  topPercent: number | null;
   size?: number;
   strokeWidth?: number;
 };
@@ -15,7 +16,8 @@ export const TopPercentRing = ({
   size = 96,
   strokeWidth = 10,
 }: TopPercentRingProps) => {
-  const progress = clampProgress(1 - topPercent / 100);
+  const progress =
+    topPercent == null ? 0 : clampProgress(1 - topPercent / 100);
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
 
@@ -50,11 +52,13 @@ export const TopPercentRing = ({
         </AppText>
         <View className="flex-row items-end">
           <AppText style={{ fontSize: 22, lineHeight: 28, fontWeight: "800" }}>
-            {topPercent}
+            {topPercent ?? "–"}
           </AppText>
-          <AppText style={{ fontSize: 13, lineHeight: 22, fontWeight: "800" }}>
-            %
-          </AppText>
+          {topPercent == null ? null : (
+            <AppText style={{ fontSize: 13, lineHeight: 22, fontWeight: "800" }}>
+              %
+            </AppText>
+          )}
         </View>
       </View>
     </View>

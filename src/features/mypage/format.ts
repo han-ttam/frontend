@@ -4,6 +4,14 @@ export const formatNumber = (value: number) => {
   return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 };
 
+/**
+ * 순위 표기. 아직 랭킹에 들지 못한 사용자는 서버가 null 을 준다.
+ * 0 으로 떨어뜨리면 "0위"로 보이므로 장소 상세 평점과 같은 관례로 대시를 쓴다.
+ */
+export const formatRank = (value: number | null | undefined) => {
+  return value == null ? "–" : formatNumber(value);
+};
+
 export const clampProgress = (value: number) => {
   return Math.min(1, Math.max(0, value));
 };

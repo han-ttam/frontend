@@ -1,18 +1,17 @@
 import { AppText } from "@/components/AppText";
 import { colors } from "@/constants/colors";
 import { CollectionProgressTab } from "@/features/mypage/components/CollectionProgressTab";
+import { LoginPrompt } from "@/features/mypage/components/LoginPrompt";
 import { ProfileCard } from "@/features/mypage/components/ProfileCard";
 import { RankingTab } from "@/features/mypage/components/RankingTab";
 import { SettingsModal } from "@/features/mypage/components/SettingsModal";
-import {
-  mypageCollections,
-  mypageProfile,
-  mypageRankings,
-} from "@/features/mypage/mockData";
 import type {
   MypageCollectionItem,
+  MypageProfile,
+  MypageRanking,
   RankingPeriod,
 } from "@/features/mypage/types";
+import { useMypageData } from "@/features/mypage/useMypageData";
 import { useMypageLayout } from "@/features/mypage/useMypageLayout";
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -31,10 +30,16 @@ const MyPage = () => {
   const [period, setPeriod] = useState<RankingPeriod>("CUMULATIVE");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const { maxContentWidth, isCompact } = useMypageLayout();
-
-  const profile = mypageProfile;
-  const collections = mypageCollections;
-  const ranking = mypageRankings[period];
+  const {
+    isAuthenticated,
+    profile,
+    ranking,
+    collections,
+    overall,
+    error,
+    isLoading,
+    reload,
+  } = useMypageData(period);
 
   const handleSelectCollection = (collection: MypageCollectionItem) => {
     router.push({
@@ -75,13 +80,99 @@ const MyPage = () => {
           </Pressable>
         </View>
 
-        <ProfileCard
-          profile={profile}
-          collectedCount={collections.overall.collected}
-          totalCount={collections.overall.total}
-        />
+        {!isAuthenticated ? (
+          <LoginPrompt
+            onPress={() =>
+              router.push({
+                pathname: "/login",
+                params: { redirect: "/mypage" },
+              })
+            }
+          />
+        ) : isLoading ? (
+          <View className="items-center gap-2 rounded-[20px] border border-foreground/10 bg-surface px-5 py-10">
+            <AppText variant="subtitle">내 정보를 불러오는 중이에요</AppText>
+            <AppText color="muted">잠시만 기다려주세요.</AppText>
+          </View>
+        ) : !profile ? (
+          <View className="gap-4 rounded-[20px] border border-foreground/10 bg-surface px-5 py-6">
+            <View className="gap-1">
+              <AppText variant="subtitle">내 정보를 불러오지 못했어요</AppText>
+              <AppText color="muted">
+                {error?.message ?? "잠시 후 다시 시도해주세요."}
+              </AppText>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="다시 시도"
+              className="self-start rounded-full border border-primary/20 bg-primary/10 px-4 py-2"
+              onPress={reload}
+            >
+              <AppText color="primary" style={{ fontWeight: "800" }}>
+                다시 시도
+              </AppText>
+            </Pressable>
+          </View>
+        ) : (
+          <MypageBody
+            collections={collections}
+            isCompact={isCompact}
+            onSelectCollection={handleSelectCollection}
+            onChangePeriod={setPeriod}
+            overall={overall}
+            period={period}
+            profile={profile}
+            ranking={ranking}
+            setTab={setTab}
+            tab={tab}
+          />
+        )}
+      </View>
 
-        <View className="flex-row overflow-hidden rounded-2xl bg-surface">
+      <SettingsModal
+        visible={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
+    </ScrollView>
+  );
+};
+
+type MypageBodyProps = {
+  collections: MypageCollectionItem[];
+  isCompact: boolean;
+  onSelectCollection: (collection: MypageCollectionItem) => void;
+  onChangePeriod: (period: RankingPeriod) => void;
+  overall: { collected: number; total: number } | undefined;
+  period: RankingPeriod;
+  profile: MypageProfile;
+  ranking: MypageRanking | undefined;
+  setTab: (tab: MypageTab) => void;
+  tab: MypageTab;
+};
+
+const MypageBody = ({
+  collections,
+  onSelectCollection,
+  onChangePeriod,
+  overall,
+  period,
+  profile,
+  ranking,
+  setTab,
+  tab,
+}: MypageBodyProps) => {
+  // 전국 수집현황 조회가 실패해도 프로필은 보여준다.
+  const progress = overall ?? { collected: 0, total: 0 };
+
+  return (
+    <>
+      <ProfileCard
+        profile={profile}
+        collectedCount={progress.collected}
+        totalCount={progress.total}
+      />
+
+      <View className="flex-row overflow-hidden rounded-2xl bg-surface">
           {TABS.map((item) => {
             const isSelected = tab === item.id;
 
@@ -109,26 +200,29 @@ const MyPage = () => {
           })}
         </View>
 
-        {tab === "collections" ? (
-          <CollectionProgressTab
-            collections={collections}
-            onSelectCollection={handleSelectCollection}
-          />
-        ) : (
-          <RankingTab
-            profile={profile}
-            ranking={ranking}
-            period={period}
-            onChangePeriod={setPeriod}
-          />
-        )}
-      </View>
-
-      <SettingsModal
-        visible={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-      />
-    </ScrollView>
+      {tab === "collections" ? (
+        <CollectionProgressTab
+          collections={{
+            overall: progress,
+            items: collections,
+            nextCursor: null,
+          }}
+          onSelectCollection={onSelectCollection}
+        />
+      ) : ranking ? (
+        <RankingTab
+          profile={profile}
+          ranking={ranking}
+          period={period}
+          onChangePeriod={onChangePeriod}
+        />
+      ) : (
+        <View className="items-center gap-2 rounded-[20px] border border-foreground/10 bg-surface px-5 py-10">
+          <AppText variant="subtitle">랭킹을 불러오지 못했어요</AppText>
+          <AppText color="muted">잠시 후 다시 시도해주세요.</AppText>
+        </View>
+      )}
+    </>
   );
 };
 
