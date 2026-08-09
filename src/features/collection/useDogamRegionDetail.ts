@@ -1,13 +1,17 @@
-import {
-  getMockRegionDetail,
-  getMockRegionPhotos,
-} from "@/features/collection/mockPhotoData";
 import { applyRegionRepresentative } from "@/features/collection/representative";
 import type {
   DogamPhoto,
+  DogamPlace,
+  DogamRegion,
   DogamRegionDetail,
 } from "@/features/collection/types";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { fetchDogamRegions } from "@/lib/api/dogam";
+import {
+  fetchRegionPhotos,
+  setRegionRepresentativePhoto,
+} from "@/lib/api/dogamPhotos";
+import { useAuth } from "@/stores/authStore";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo } from "react";
 
 export const dogamRegionDetailKey = (provinceCode: string) => {
@@ -19,30 +23,56 @@ export const dogamRegionPhotosKey = (provinceCode: string) => {
 };
 
 /**
- * 도감 도 상세.
- *
- * 목데이터 단계라 queryFn 이 동기 값을 돌려주지만, 캐시를 상태 저장소로 쓰고 있어
- * 화면을 오가도 대표 지정이 유지된다(FR-023). 실제 API 가 나오면 queryFn 만 바꾸면 된다.
+ * 서버에는 "이 시·도에서 내가 수집한 관광지 목록" 엔드포인트가 없다.
+ * 대신 그 시·도의 내 사진이 사진마다 placeId·placeName 을 들고 오므로,
+ * 장소별로 묶어 카드를 만든다. 도감은 원래 내가 인증한 것만 보여주는
+ * 화면이라 이 모델이 맞다.
  */
-export const useDogamRegionDetail = (provinceCode: string | undefined) => {
-  const queryClient = useQueryClient();
-  const enabled = Boolean(provinceCode);
+const toPlaces = (photos: DogamPhoto[]): DogamPlace[] => {
+  const byPlace = new Map<string, DogamPhoto[]>();
 
-  const detailQuery = useQuery({
-    enabled,
-    queryFn: async (): Promise<DogamRegionDetail | null> => {
-      return getMockRegionDetail(provinceCode!) ?? null;
-    },
-    queryKey: dogamRegionDetailKey(provinceCode ?? ""),
+  photos.forEach((photo) => {
+    const current = byPlace.get(photo.placeId) ?? [];
+
+    current.push(photo);
+    byPlace.set(photo.placeId, current);
   });
 
-  // 도 대표 후보 — 그 도 모든 관광지의 사진 (FR-016a).
-  // 도 상세 진입마다 사진 전체를 들고 있지 않도록 별도 키로 분리했다.
+  return Array.from(byPlace.entries()).map(([placeId, placePhotos]) => {
+    const lastVerifiedAt = placePhotos
+      .map((photo) => photo.verifiedAt)
+      .sort()
+      .at(-1);
+
+    return {
+      placeId,
+      provinceCode: "",
+      name: placePhotos[0]?.placeName ?? "",
+      // 사진 응답에 주소가 없다. 카드에서 주소 줄은 비워둔다.
+      address: "",
+      photoCount: placePhotos.length,
+      lastVerifiedAt: lastVerifiedAt ?? "",
+      representativePhotoId: null,
+    };
+  });
+};
+
+export const useDogamRegionDetail = (provinceCode: string | undefined) => {
+  const { accessToken, isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
+  const enabled =
+    Boolean(provinceCode) && isAuthenticated && Boolean(accessToken);
+
+  const regionsQuery = useQuery({
+    enabled,
+    queryFn: ({ signal }) => fetchDogamRegions(accessToken!, signal),
+    queryKey: ["dogam-regions"],
+  });
+
   const regionPhotosQuery = useQuery({
     enabled,
-    queryFn: async (): Promise<DogamPhoto[]> => {
-      return getMockRegionPhotos(provinceCode!);
-    },
+    queryFn: ({ signal }) =>
+      fetchRegionPhotos(provinceCode!, accessToken!, signal),
     queryKey: dogamRegionPhotosKey(provinceCode ?? ""),
   });
 
@@ -51,39 +81,86 @@ export const useDogamRegionDetail = (provinceCode: string | undefined) => {
     [regionPhotosQuery.data],
   );
 
+  const region: DogamRegion | undefined = useMemo(
+    () =>
+      regionsQuery.data?.find((item) => item.provinceCode === provinceCode),
+    [provinceCode, regionsQuery.data],
+  );
+
+  // 대표 지정은 캐시를 상태 저장소로 쓴다. 화면을 오가도 유지되도록.
+  const detailQuery = useQuery({
+    enabled: enabled && Boolean(region),
+    queryFn: async (): Promise<DogamRegionDetail | null> => {
+      if (!region) {
+        return null;
+      }
+
+      const places = toPlaces(regionPhotos).map((place) => ({
+        ...place,
+        provinceCode: region.provinceCode,
+      }));
+
+      return {
+        region,
+        places,
+        photoTotal: places.reduce((sum, place) => sum + place.photoCount, 0),
+      };
+    },
+    queryKey: dogamRegionDetailKey(provinceCode ?? ""),
+  });
+
   const photoById = useMemo(() => {
-    return Object.fromEntries(regionPhotos.map((photo) => [photo.photoId, photo]));
+    return Object.fromEntries(
+      regionPhotos.map((photo) => [photo.photoId, photo]),
+    );
   }, [regionPhotos]);
 
-  /**
-   * 도(1depth) 대표 지정. 후보는 그 도 모든 관광지의 사진이다 (FR-016a).
-   * 관광지 대표들은 건드리지 않는다 (I6).
-   */
+  const representativeMutation = useMutation({
+    mutationFn: (photoId: string) =>
+      setRegionRepresentativePhoto(provinceCode!, photoId, accessToken!),
+    onError: (_error, _photoId, context) => {
+      // 서버 저장이 실패하면 낙관적 변경을 되돌린다.
+      if (context?.previous !== undefined) {
+        queryClient.setQueryData(
+          dogamRegionDetailKey(provinceCode!),
+          context.previous,
+        );
+      }
+    },
+    onMutate: async (photoId: string) => {
+      const key = dogamRegionDetailKey(provinceCode!);
+
+      await queryClient.cancelQueries({ queryKey: key });
+
+      const previous = queryClient.getQueryData<DogamRegionDetail | null>(key);
+      const photoIds = regionPhotos.map((photo) => photo.photoId);
+
+      queryClient.setQueryData<DogamRegionDetail | null>(key, (current) =>
+        current ? applyRegionRepresentative(current, photoId, photoIds) : current,
+      );
+
+      return { previous };
+    },
+  });
+
   const setRegionRepresentative = useCallback(
     (photoId: string) => {
-      if (!provinceCode) {
+      if (!provinceCode || !accessToken) {
         return;
       }
 
-      const photoIds = regionPhotos.map((photo) => photo.photoId);
-
-      queryClient.setQueryData<DogamRegionDetail | null>(
-        dogamRegionDetailKey(provinceCode),
-        (current) =>
-          current
-            ? applyRegionRepresentative(current, photoId, photoIds)
-            : current,
-      );
+      representativeMutation.mutate(photoId);
     },
-    [provinceCode, queryClient, regionPhotos],
+    [accessToken, provinceCode, representativeMutation],
   );
 
   return {
     data: detailQuery.data ?? undefined,
     regionPhotos,
     photoById,
-    error: detailQuery.error ?? regionPhotosQuery.error ?? null,
-    isLoading: detailQuery.isLoading || regionPhotosQuery.isLoading,
+    error: regionsQuery.error ?? regionPhotosQuery.error ?? null,
+    isLoading: regionsQuery.isLoading || regionPhotosQuery.isLoading,
+    representativeError: representativeMutation.error ?? null,
     setRegionRepresentative,
   };
 };
