@@ -66,6 +66,17 @@ const useProviderAuthorize = (provider: OAuthProvider) => {
       config.discovery,
     );
 
+    // Kakao 백엔드는 access token(→userinfo)을, Google 백엔드는 id_token(→tokeninfo)을
+    // 검증한다. 그래서 구글은 access token 대신 openid 스코프로 받은 id_token 을 보낸다.
+    if (provider === "google") {
+      if (!tokens.idToken) {
+        throw new Error(
+          "구글 로그인에서 id_token 을 받지 못했어요. 다시 시도해 주세요.",
+        );
+      }
+      return tokens.idToken;
+    }
+
     return tokens.accessToken;
   };
 
