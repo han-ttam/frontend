@@ -1,25 +1,31 @@
 import { AppText } from "@/components/AppText";
 import { CollectionTabs } from "@/features/collection/components/CollectionTabs";
+import { LoginPrompt } from "@/features/mypage/components/LoginPrompt";
 import { OverviewCard } from "@/features/collection/components/OverviewCard";
 import { RecentList } from "@/features/collection/components/RecentList";
 import { RegionGrid } from "@/features/collection/components/RegionGrid";
 import { ThemeList } from "@/features/collection/components/ThemeList";
-import {
-  dogamOverview,
-  dogamRecent,
-  dogamRegions,
-  dogamThemes,
-} from "@/features/collection/mockData";
 import type { DogamRegion, DogamTab } from "@/features/collection/types";
 import { useCollectionLayout } from "@/features/collection/useCollectionLayout";
+import { useDogamData } from "@/features/collection/useDogamData";
 import { router } from "expo-router";
 import { useState } from "react";
-import { ScrollView, View } from "react-native";
+import { Pressable, ScrollView, View } from "react-native";
 
 const CollectionPage = () => {
   const [tab, setTab] = useState<DogamTab>("regions");
   const { maxContentWidth, horizontalPadding, isCompact } =
     useCollectionLayout();
+  const {
+    isAuthenticated,
+    overview,
+    regions,
+    themes,
+    recent,
+    error,
+    isLoading,
+    reload,
+  } = useDogamData();
 
   // 도감 전용 상세는 provinceCode 를 그대로 키로 쓴다.
   // RegionId 변환이 없어져 잠금 아닌 도 카드가 전부 열린다 (충청도·경상도·전라도·울릉도·독도 포함).
@@ -54,30 +60,64 @@ const CollectionPage = () => {
           </AppText>
         </View>
 
-        <CollectionTabs tab={tab} onChangeTab={setTab} />
-
-        <OverviewCard overview={dogamOverview} />
-
-        {tab === "regions" ? (
-          <RegionGrid
-            regions={dogamRegions}
-            onSelectRegion={openRegionDetail}
-          />
-        ) : null}
-
-        {tab === "themes" ? <ThemeList themes={dogamThemes} /> : null}
-
-        {tab === "recent" ? (
-          <RecentList
-            recent={dogamRecent}
-            onSelectPlace={(item) => {
+        {!isAuthenticated ? (
+          <LoginPrompt
+            onPress={() =>
               router.push({
-                pathname: "/map/list/[id]",
-                params: { id: item.placeId },
-              });
-            }}
+                pathname: "/login",
+                params: { redirect: "/collection" },
+              })
+            }
           />
-        ) : null}
+        ) : isLoading ? (
+          <View className="items-center gap-2 rounded-[20px] border border-foreground/10 bg-surface px-5 py-10">
+            <AppText variant="subtitle">도감을 불러오는 중이에요</AppText>
+            <AppText color="muted">잠시만 기다려주세요.</AppText>
+          </View>
+        ) : error ? (
+          <View className="gap-4 rounded-[20px] border border-foreground/10 bg-surface px-5 py-6">
+            <View className="gap-1">
+              <AppText variant="subtitle">도감을 불러오지 못했어요</AppText>
+              <AppText color="muted">
+                {error.message || "잠시 후 다시 시도해주세요."}
+              </AppText>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="다시 시도"
+              className="self-start rounded-full border border-primary/20 bg-primary/10 px-4 py-2"
+              onPress={reload}
+            >
+              <AppText color="primary" style={{ fontWeight: "800" }}>
+                다시 시도
+              </AppText>
+            </Pressable>
+          </View>
+        ) : (
+          <>
+            <CollectionTabs tab={tab} onChangeTab={setTab} />
+
+            <OverviewCard overview={overview} />
+
+            {tab === "regions" ? (
+              <RegionGrid regions={regions} onSelectRegion={openRegionDetail} />
+            ) : null}
+
+            {tab === "themes" ? <ThemeList themes={themes} /> : null}
+
+            {tab === "recent" ? (
+              <RecentList
+                recent={{ items: recent, nextCursor: null }}
+                onSelectPlace={(item) => {
+                  router.push({
+                    pathname: "/map/list/[id]",
+                    params: { id: item.placeId },
+                  });
+                }}
+              />
+            ) : null}
+          </>
+        )}
       </View>
     </ScrollView>
   );

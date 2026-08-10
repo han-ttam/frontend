@@ -1,4 +1,3 @@
-import { getMockPlacePhotos } from "@/features/collection/mockPhotoData";
 import {
   applyPlaceRepresentative,
   applyPlaceRepresentativeToRegion,
@@ -8,7 +7,13 @@ import type {
   DogamRegionDetail,
 } from "@/features/collection/types";
 import { dogamRegionDetailKey } from "@/features/collection/useDogamRegionDetail";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  fetchPlacePhotos,
+  setPlaceRepresentativePhoto,
+} from "@/lib/api/dogamPhotos";
+import { fetchPlaceDetail } from "@/lib/api/placeDetail";
+import { useAuth } from "@/stores/authStore";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 
 export const dogamPlacePhotosKey = (placeId: string) => {
@@ -16,60 +21,120 @@ export const dogamPlacePhotosKey = (placeId: string) => {
 };
 
 /**
- * 관광지 사진첩 + 관광지(2depth) 대표 지정.
- *
- * 대표를 바꾸면 사진첩 캐시와 도 상세 캐시를 **둘 다** 갱신한다.
- * 두 화면이 같은 사실을 나눠 갖고 있어, 도 상세로 돌아갔을 때 카드 표지가
- * 바뀌어 있어야 하기 때문이다 (FR-012).
+ * 장소 상세의 regionCode 는 "1_23" 같은 복합 코드인데, 도감은 시·도 코드("1")를
+ * 쓴다. 앞부분만 떼어 맞춘다.
  */
+const toProvinceCode = (regionCode: string) => regionCode.split("_")[0] ?? "";
+
 export const useDogamPlacePhotos = (placeId: string | undefined) => {
+  const { accessToken, isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
-  const enabled = Boolean(placeId);
+  const enabled = Boolean(placeId) && isAuthenticated && Boolean(accessToken);
 
   const photosQuery = useQuery({
     enabled,
-    queryFn: async (): Promise<DogamPlacePhotos | null> => {
-      return getMockPlacePhotos(placeId!) ?? null;
+    queryFn: async ({ signal }): Promise<DogamPlacePhotos | null> => {
+      const [photos, place] = await Promise.all([
+        fetchPlacePhotos(placeId!, accessToken!, signal),
+        // 사진 응답에는 장소 이름·주소가 없을 수 있어 장소 상세로 채운다.
+        fetchPlaceDetail(placeId!, signal),
+      ]);
+
+      const lastVerifiedAt = photos
+        .map((photo) => photo.verifiedAt)
+        .sort()
+        .at(-1);
+
+      return {
+        place: {
+          placeId: placeId!,
+          provinceCode: toProvinceCode(place.regionCode),
+          name: place.name,
+          address: place.address,
+          photoCount: photos.length,
+          lastVerifiedAt: lastVerifiedAt ?? "",
+          representativePhotoId: null,
+        },
+        photos,
+      };
     },
     queryKey: dogamPlacePhotosKey(placeId ?? ""),
   });
 
   const data = photosQuery.data ?? undefined;
 
+  const representativeMutation = useMutation({
+    mutationFn: (photoId: string) =>
+      setPlaceRepresentativePhoto(placeId!, photoId, accessToken!),
+    onError: (_error, _photoId, context) => {
+      if (context?.previousPhotos !== undefined) {
+        queryClient.setQueryData(
+          dogamPlacePhotosKey(placeId!),
+          context.previousPhotos,
+        );
+      }
+
+      if (context?.provinceCode && context.previousRegion !== undefined) {
+        queryClient.setQueryData(
+          dogamRegionDetailKey(context.provinceCode),
+          context.previousRegion,
+        );
+      }
+    },
+    onMutate: async (photoId: string) => {
+      const photosKey = dogamPlacePhotosKey(placeId!);
+
+      await queryClient.cancelQueries({ queryKey: photosKey });
+
+      const previousPhotos =
+        queryClient.getQueryData<DogamPlacePhotos | null>(photosKey);
+      const provinceCode = previousPhotos?.place.provinceCode;
+      const previousRegion = provinceCode
+        ? queryClient.getQueryData<DogamRegionDetail | null>(
+            dogamRegionDetailKey(provinceCode),
+          )
+        : undefined;
+
+      queryClient.setQueryData<DogamPlacePhotos | null>(photosKey, (current) =>
+        current ? applyPlaceRepresentative(current, photoId) : current,
+      );
+
+      // 도 상세를 아직 보지 않았다면 캐시가 없다. 그 경우 갱신할 것도 없다.
+      if (provinceCode) {
+        queryClient.setQueryData<DogamRegionDetail | null>(
+          dogamRegionDetailKey(provinceCode),
+          (current) =>
+            current
+              ? applyPlaceRepresentativeToRegion(current, placeId!, photoId)
+              : current,
+        );
+      }
+
+      return { previousPhotos, previousRegion, provinceCode };
+    },
+  });
+
   const setPlaceRepresentative = useCallback(
     (photoId: string) => {
-      if (!placeId || !data) {
+      if (!placeId || !accessToken || !data) {
         return;
       }
 
-      // 변경이 없으면(이미 대표거나 후보 밖) 같은 참조가 돌아온다.
+      // 변경이 없으면(이미 대표거나 후보 밖) 서버를 부르지 않는다.
       if (applyPlaceRepresentative(data, photoId) === data) {
         return;
       }
 
-      const provinceCode = data.place.provinceCode;
-
-      queryClient.setQueryData<DogamPlacePhotos | null>(
-        dogamPlacePhotosKey(placeId),
-        (current) => (current ? applyPlaceRepresentative(current, photoId) : current),
-      );
-
-      // 도 상세를 아직 보지 않았다면 캐시가 없다. 그 경우 갱신할 것도 없다.
-      queryClient.setQueryData<DogamRegionDetail | null>(
-        dogamRegionDetailKey(provinceCode),
-        (current) =>
-          current
-            ? applyPlaceRepresentativeToRegion(current, placeId, photoId)
-            : current,
-      );
+      representativeMutation.mutate(photoId);
     },
-    [data, placeId, queryClient],
+    [accessToken, data, placeId, representativeMutation],
   );
 
   return {
     data,
     error: photosQuery.error ?? null,
     isLoading: photosQuery.isLoading,
+    representativeError: representativeMutation.error ?? null,
     setPlaceRepresentative,
   };
 };

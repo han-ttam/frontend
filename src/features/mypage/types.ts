@@ -7,9 +7,12 @@ export type MypageProfile = {
   expForNextLevel: number;
   dogamPercent: number;
   visitedCount: number;
-  nationalRank: number;
+  /** 아직 랭킹에 들지 못한 사용자는 null 이다. 신규 계정의 정상 상태다. */
+  nationalRank: number | null;
   totalUsers: number;
+  /** 서버가 내려주지 않는다. 화면에서 쓰지 않는다. */
   bio?: string | null;
+  /** 서버가 내려주지 않는다. 화면에서 쓰지 않는다. */
   location?: string | null;
 };
 
@@ -71,14 +74,16 @@ export type RankingTraveler = {
 };
 
 export type MypageRanking = {
-  topPercent: number;
+  /** 랭킹 데이터가 없으면 null 이다. */
+  topPercent: number | null;
   top3: RankingTraveler[];
   leaderboard: {
     items: RankingTraveler[];
     nextCursor: string | null;
   };
   me: {
-    rank: number;
+    /** 아직 순위가 없으면 null 이다. */
+    rank: number | null;
     score: number;
     dogamPercent: number;
     pointsToNext: number;
